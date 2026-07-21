@@ -1,0 +1,95 @@
+/* ============================================
+   Sales Screen Styles
+   ============================================ */
+
+.sales-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.sales-toolbar {
+  margin-bottom: var(--space-4);
+}
+
+.sales-search {
+  max-width: 500px;
+}
+
+.sales-list {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.date-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.method-badge {
+  display: inline-flex;
+  padding: 2px var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+}
+
+.method-badge--cash {
+  background: var(--color-success-bg);
+  color: var(--color-success-dark);
+}
+
+.method-badge--gcash {
+  background: var(--color-info-bg);
+  color: var(--color-info-dark);
+}
+
+.btn--small {
+  padding: var(--space-2) var(--space-3);
+  min-height: auto;
+  font-size: var(--font-size-sm);
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.mt-4 {
+  margin-top: var(--space-4);
+}
+
+.receipt-container {
+  display: flex;
+  justify-content: center;
+  background: #e5e5e5;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Make sure reprint button works with standard print dialog for now */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .receipt-container, .receipt-container * {
+    visibility: visible;
+  }
+  .receipt-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    background: white;
+  }
+}

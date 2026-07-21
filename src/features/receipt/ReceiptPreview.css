@@ -1,0 +1,121 @@
+/* ============================================
+   Receipt Preview Styles
+   ============================================ */
+
+.receipt {
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.receipt__paper {
+  background: #fafafa;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #1a1a1a;
+}
+
+.receipt__header {
+  text-align: center;
+  margin-bottom: var(--space-2);
+}
+
+.receipt__store-name {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+.receipt__store-address {
+  font-size: 11px;
+  color: #555;
+  margin-bottom: var(--space-2);
+}
+
+.receipt__divider {
+  text-align: center;
+  color: #ccc;
+  font-size: 10px;
+  margin: var(--space-2) 0;
+  overflow: hidden;
+  letter-spacing: -1px;
+}
+
+.receipt__info {
+  margin-bottom: var(--space-1);
+}
+
+.receipt__info-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  padding: 1px 0;
+}
+
+.receipt__items-header {
+  display: grid;
+  grid-template-columns: 1fr 40px 70px;
+  font-weight: bold;
+  font-size: 11px;
+  padding-bottom: var(--space-1);
+  border-bottom: 1px dashed #ddd;
+  margin-bottom: var(--space-1);
+}
+
+.receipt__item {
+  display: grid;
+  grid-template-columns: 1fr 40px 70px;
+  font-size: 11px;
+  padding: 2px 0;
+}
+
+.receipt__item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.receipt__item-qty {
+  text-align: center;
+}
+
+.receipt__item-price {
+  text-align: right;
+}
+
+.receipt__totals {
+  margin: var(--space-1) 0;
+}
+
+.receipt__total-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  padding: 1px 0;
+}
+
+.receipt__total-row--grand {
+  font-weight: bold;
+  font-size: 14px;
+  padding: var(--space-1) 0;
+}
+
+.receipt__footer {
+  text-align: center;
+  margin-top: var(--space-2);
+}
+
+.receipt__footer p {
+  font-size: 12px;
+  font-weight: bold;
+  color: #333;
+}
+
+.receipt__footer-small {
+  font-size: 10px;
+  color: #999;
+  font-weight: normal !important;
+}

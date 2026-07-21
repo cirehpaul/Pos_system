@@ -1,0 +1,83 @@
+/* ============================================
+   Inventory Screen Styles
+   ============================================ */
+
+.inventory-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.inventory-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.summary-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+  padding: var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.summary-card__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bg-primary-light { background: var(--color-primary-50); }
+.bg-warning-light { background: var(--color-warning-bg); }
+.bg-danger-light { background: var(--color-danger-bg); }
+
+.summary-card__info {
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-card__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-medium);
+}
+
+.summary-card__value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.status-badge--warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-dark);
+}
+
+.stock-number {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
+}
+
+.font-medium { font-weight: var(--font-weight-medium); }
+.font-bold { font-weight: var(--font-weight-bold); }
+.mb-4 { margin-bottom: var(--space-4); }
+
+.restock-info {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+  border-bottom: 1px dashed var(--color-border);
+}
+
+@media (max-width: 768px) {
+  .inventory-summary {
+    grid-template-columns: 1fr;
+  }
+}
