@@ -28,12 +28,6 @@ export default function ReportsScreen() {
   const [page, setPage] = useState(1);
   const [perPage] = useState(25);
 
-  // Expense modal
-  const [showExpenseModal, setShowExpenseModal] = useState(false);
-  const [expenseForm, setExpenseForm] = useState({
-    category: 'Operations', amount: '', description: '', date: format(new Date(), 'yyyy-MM-dd')
-  });
-
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -53,31 +47,6 @@ export default function ReportsScreen() {
   }, [datePreset, customStart, customEnd, paymentFilter, cashierFilter]);
 
   useEffect(() => { loadData(); }, [loadData]);
-
-  const handleAddExpense = async (e) => {
-    e.preventDefault();
-    if (!expenseForm.amount || parseFloat(expenseForm.amount) <= 0) {
-      toast.error('Enter a valid amount');
-      return;
-    }
-    try {
-      await db.expenses.add({
-        id: crypto.randomUUID(),
-        category: expenseForm.category,
-        amount: parseFloat(expenseForm.amount),
-        description: expenseForm.description,
-        date: expenseForm.date,
-        createdAt: new Date().toISOString()
-      });
-      toast.success('Expense recorded');
-      setShowExpenseModal(false);
-      setExpenseForm({ category: 'Operations', amount: '', description: '', date: format(new Date(), 'yyyy-MM-dd') });
-      loadData();
-    } catch (err) {
-      console.error('Failed to add expense:', err);
-      toast.error('Failed to add expense');
-    }
-  };
 
   const handleExport = async () => {
     try {
@@ -181,9 +150,6 @@ export default function ReportsScreen() {
           <p>Analyze your business performance</p>
         </div>
         <div className="page-header__actions">
-          <button className="btn btn--ghost" onClick={() => setShowExpenseModal(true)}>
-            <Plus size={16} /> Log Expense
-          </button>
           <button className="btn btn--primary" onClick={handleExport}>
             <Download size={16} /> Export to Excel
           </button>
@@ -386,45 +352,7 @@ export default function ReportsScreen() {
         )}
       </div>
 
-      {/* Expense Modal */}
-      <Modal isOpen={showExpenseModal} onClose={() => setShowExpenseModal(false)} title="Log Business Expense" size="sm">
-        <form onSubmit={handleAddExpense} className="category-form">
-          <div className="form-group">
-            <label>Category</label>
-            <select value={expenseForm.category} onChange={e => setExpenseForm(prev => ({ ...prev, category: e.target.value }))}>
-              <option value="Operations">Operations</option>
-              <option value="Rent">Rent</option>
-              <option value="Utilities">Utilities</option>
-              <option value="Wages">Wages</option>
-              <option value="Packaging">Packaging</option>
-              <option value="Maintenance">Maintenance</option>
-              <option value="Marketing">Marketing</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-          <div className="form-group">
-            <label>Amount (₱)</label>
-            <input type="number" min="0.01" step="0.01" required value={expenseForm.amount}
-              onChange={e => setExpenseForm(prev => ({ ...prev, amount: e.target.value }))}
-              placeholder="0.00" autoFocus />
-          </div>
-          <div className="form-group">
-            <label>Date</label>
-            <input type="date" value={expenseForm.date}
-              onChange={e => setExpenseForm(prev => ({ ...prev, date: e.target.value }))} />
-          </div>
-          <div className="form-group">
-            <label>Description (Optional)</label>
-            <input type="text" value={expenseForm.description}
-              onChange={e => setExpenseForm(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="e.g. Monthly electric bill" />
-          </div>
-          <div className="form-actions">
-            <button type="button" className="btn btn--ghost" onClick={() => setShowExpenseModal(false)}>Cancel</button>
-            <button type="submit" className="btn btn--primary">Save Expense</button>
-          </div>
-        </form>
-      </Modal>
+
     </div>
   );
 }
