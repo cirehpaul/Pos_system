@@ -302,7 +302,7 @@
 .fin-chart-svg-container {
   position: relative;
   width: 100%;
-  height: 280px; /* fixed height for chart */
+  height: 350px; /* fixed height for chart */
   margin-top: var(--space-4);
 }
 
@@ -1300,15 +1300,21 @@
 }
 
 /* ── Responsive Breakpoints ── */
-@media (max-width: 1200px) {
+
+/* Tablet Landscape */
+@media (max-width: 1199px) {
   .dashboard__cards-8 {
     grid-template-columns: repeat(2, 1fr);
   }
   .expense-monitor-layout {
     grid-template-columns: 1fr;
   }
+  .fin-chart-svg-container {
+    height: 300px;
+  }
 }
 
+/* Tablet Portrait & Smaller Screens */
 @media (max-width: 900px) {
   .dashboard__charts-row {
     grid-template-columns: 1fr;
@@ -1317,15 +1323,34 @@
     grid-template-columns: 1fr 1fr;
     gap: 4px;
   }
-  .waterfall-flow {
+}
+
+@media (max-width: 767px) {
+  .analytics-split {
+    grid-template-columns: 1fr;
+  }
+  .dashboard__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .dashboard__header-actions {
+    justify-content: flex-start;
+  }
+  .dashboard__date-controls {
+    width: 100%;
+  }
+  .date-tabs {
     flex-wrap: wrap;
   }
-  .waterfall-operator {
-    display: none;
+  .date-tab {
+    flex: 1 1 auto;
+    text-align: center;
+    padding: 12px; /* larger touch target */
   }
 }
 
-@media (max-width: 640px) {
+/* Mobile */
+@media (max-width: 599px) {
   .dashboard__cards-8 {
     grid-template-columns: 1fr;
   }
@@ -1335,4 +1360,19 @@
   .tx-modal-header-grid {
     grid-template-columns: 1fr;
   }
+  .fin-chart-svg-container {
+    height: 260px;
+  }
+  .date-custom {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+  .date-input {
+    width: 100% !important;
+  }
+  .date-separator {
+    display: none;
+  }
+  /* Ensure smaller font sizes in KPI values if needed, though they usually scale down gracefully if flexed */
 }
