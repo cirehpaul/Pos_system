@@ -2,6 +2,7 @@ import Dexie from 'dexie';
 
 export const db = new Dexie('POSDatabase');
 
+// Version 1 - Original schema
 db.version(1).stores({
   users: 'id, name, pin, role, createdAt',
   categories: 'id, name, sortOrder, createdAt',
@@ -9,6 +10,79 @@ db.version(1).stores({
   orders: 'id, orderNumber, paymentMethod, status, createdAt',
   settings: 'id, key'
 });
+
+// Version 2 - Add inventoryTransactions, expenses, and enhanced indexes
+db.version(2).stores({
+  users: 'id, name, pin, role, createdAt',
+  categories: 'id, name, sortOrder, createdAt',
+  products: 'id, name, categoryId, price, cost, stock, sku, minStock, status, createdAt, updatedAt',
+  orders: 'id, orderNumber, paymentMethod, cashierName, status, createdAt',
+  settings: 'id, key',
+  inventoryTransactions: 'id, productId, type, reference, createdAt',
+  expenses: 'id, category, date, createdAt'
+}).upgrade(tx => {
+  return tx.table('products').toCollection().modify(product => {
+    if (product.cost === undefined || product.cost === null) {
+      product.cost = 0;
+    }
+    if (!product.sku) {
+      product.sku = '';
+    }
+    if (product.minStock === undefined || product.minStock === null) {
+      product.minStock = 10;
+    }
+  });
+});
+
+// Version 3 - Add loginSessions table and user displayName/status
+db.version(3).stores({
+  users: 'id, name, pin, role, status, createdAt',
+  categories: 'id, name, sortOrder, createdAt',
+  products: 'id, name, categoryId, price, cost, stock, sku, minStock, status, createdAt, updatedAt',
+  orders: 'id, orderNumber, paymentMethod, cashierId, cashierName, status, createdAt',
+  settings: 'id, key',
+  inventoryTransactions: 'id, productId, type, reference, createdAt',
+  expenses: 'id, category, date, createdAt',
+  loginSessions: 'id, userId, userName, role, loginAt, logoutAt, status'
+}).upgrade(tx => {
+  // Ensure existing users have displayName and status fields
+  return tx.table('users').toCollection().modify(user => {
+    if (!user.displayName) {
+      user.displayName = user.name;
+    }
+    if (!user.status) {
+      user.status = 'active';
+    }
+  });
+});
+
+// ── Financial Precision Helpers ──
+
+/**
+ * Round to 2 decimal places to avoid floating-point drift.
+ * Uses Math.round to avoid banker's rounding issues.
+ */
+export function roundCurrency(num) {
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+}
+
+/**
+ * Format as Philippine Peso: ₱1,234.56
+ */
+export function formatCurrency(num) {
+  const rounded = roundCurrency(num || 0);
+  return '₱' + rounded.toLocaleString('en-PH', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+/**
+ * Format number with commas: 1,234
+ */
+export function formatNumber(num) {
+  return (num || 0).toLocaleString('en-PH');
+}
 
 let isInitializing = false;
 
@@ -57,8 +131,10 @@ async function seedDatabase() {
   await db.users.add({
     id: crypto.randomUUID(),
     name: 'Owner',
+    displayName: 'Owner',
     pin: '1234',
     role: 'owner',
+    status: 'active',
     createdAt: new Date().toISOString()
   });
 
@@ -66,8 +142,10 @@ async function seedDatabase() {
   await db.users.add({
     id: crypto.randomUUID(),
     name: 'Cashier',
+    displayName: 'Cire - Cashier',
     pin: '0000',
     role: 'cashier',
+    status: 'active',
     createdAt: new Date().toISOString()
   });
 

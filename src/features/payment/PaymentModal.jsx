@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Banknote, Smartphone, Check, Printer } from 'lucide-react';
+import { X, Banknote, Smartphone, Check } from 'lucide-react';
 import db from '../../db/database';
 import useCartStore from '../../stores/cartStore';
 import useAuthStore from '../../stores/authStore';
@@ -55,6 +55,7 @@ export default function PaymentModal({ onClose, onComplete }) {
       return;
     }
 
+    if (processing) return; // Prevent duplicate submissions
     setProcessing(true);
 
     try {
@@ -69,16 +70,19 @@ export default function PaymentModal({ onClose, onComplete }) {
           productId: item.productId,
           name: item.name,
           price: item.price,
+          cost: item.cost || 0,  // Snapshot cost for accurate COGS
           quantity: item.quantity,
           subtotal: item.subtotal
         })),
         subtotal: total,
         tax: 0,
+        discount: 0,
         total: total,
         paymentMethod,
         amountReceived: paymentMethod === 'cash' ? parseFloat(amountReceived) : total,
         change: paymentMethod === 'cash' ? change : 0,
-        cashierName: currentUser?.name || 'Unknown',
+        cashierId: currentUser?.id || null,
+        cashierName: currentUser?.displayName || currentUser?.name || 'Unknown',
         status: 'completed',
         createdAt: new Date().toISOString()
       };
@@ -86,7 +90,7 @@ export default function PaymentModal({ onClose, onComplete }) {
       // Save order
       await db.orders.add(order);
 
-      // Deduct stock
+      // Deduct stock and create inventory transactions
       for (const item of items) {
         const product = await db.products.get(item.productId);
         if (product) {
@@ -95,6 +99,20 @@ export default function PaymentModal({ onClose, onComplete }) {
             stock: newStock,
             status: newStock === 0 ? 'out_of_stock' : 'available',
             updatedAt: new Date().toISOString()
+          });
+
+          // Record inventory transaction for audit trail
+          await db.inventoryTransactions.add({
+            id: crypto.randomUUID(),
+            productId: item.productId,
+            type: 'sale',
+            quantity: -item.quantity,
+            costPerUnit: item.cost || 0,
+            previousStock: product.stock,
+            newStock,
+            reference: orderNumber,
+            notes: `Sale - ${order.orderNumber}`,
+            createdAt: new Date().toISOString()
           });
         }
       }

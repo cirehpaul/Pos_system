@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit3, Trash2, Package, Search, ChevronRight } from 'lucide-react';
+import { Plus, Edit3, Trash2, Package, Search } from 'lucide-react';
 import db from '../../db/database';
 import Modal from '../../components/Modal/Modal';
 import { useToast } from '../../components/Toast/Toast';
@@ -16,9 +16,11 @@ export default function ProductsScreen() {
   const [formData, setFormData] = useState({
     name: '',
     categoryId: '',
+    sku: '',
     price: '',
     cost: '',
     stock: '',
+    minStock: '10',
     description: '',
     status: 'available',
     image: ''
@@ -60,9 +62,11 @@ export default function ProductsScreen() {
     setFormData({
       name: '',
       categoryId: categoryId,
+      sku: '',
       price: '',
       cost: '',
       stock: '',
+      minStock: '10',
       description: '',
       status: 'available',
       image: ''
@@ -75,9 +79,11 @@ export default function ProductsScreen() {
     setFormData({
       name: prod.name,
       categoryId: prod.categoryId,
+      sku: prod.sku || '',
       price: prod.price,
       cost: prod.cost || '',
       stock: prod.stock,
+      minStock: prod.minStock !== undefined && prod.minStock !== null ? prod.minStock : 10,
       description: prod.description || '',
       status: prod.status,
       image: prod.image || ''
@@ -96,9 +102,11 @@ export default function ProductsScreen() {
       const productData = {
         name: formData.name.trim(),
         categoryId: formData.categoryId,
+        sku: (formData.sku || '').trim(),
         price: parseFloat(formData.price),
         cost: formData.cost ? parseFloat(formData.cost) : 0,
         stock: parseInt(formData.stock, 10),
+        minStock: formData.minStock !== '' ? parseInt(formData.minStock, 10) : 10,
         description: formData.description.trim(),
         status: parseInt(formData.stock, 10) > 0 ? formData.status : 'out_of_stock',
         image: formData.image,
@@ -120,6 +128,7 @@ export default function ProductsScreen() {
       closeModal();
       loadData();
     } catch (err) {
+      console.error('Failed to save menu item:', err);
       toast.error('Failed to save menu item');
     }
   };
@@ -131,6 +140,7 @@ export default function ProductsScreen() {
       setDeleteConfirm(null);
       loadData();
     } catch (err) {
+      console.error('Failed to delete menu item:', err);
       toast.error('Failed to delete menu item');
     }
   };
@@ -142,6 +152,7 @@ export default function ProductsScreen() {
       setDeleteCategoryConfirm(null);
       loadData();
     } catch (err) {
+      console.error('Failed to delete category:', err);
       toast.error('Failed to delete category');
     }
   };
@@ -358,6 +369,29 @@ export default function ProductsScreen() {
                 <option value="available">Available</option>
                 <option value="out_of_stock">Out of Stock</option>
               </select>
+            </div>
+          </div>
+
+          <div className="form-row mt-3">
+            <div className="form-group flex-1">
+              <label>SKU / Barcode (Optional)</label>
+              <input
+                type="text"
+                value={formData.sku}
+                onChange={e => setFormData({ ...formData, sku: e.target.value })}
+                placeholder="e.g. BEV-001"
+              />
+            </div>
+            <div className="form-group flex-1">
+              <label>Low Stock Alert Threshold</label>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={formData.minStock}
+                onChange={e => setFormData({ ...formData, minStock: e.target.value })}
+                placeholder="10"
+              />
             </div>
           </div>
 

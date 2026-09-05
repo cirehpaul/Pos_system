@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Plus, Minus, Trash2, ShoppingCart, X, CreditCard, AlertCircle } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, ShoppingCart, X, CreditCard } from 'lucide-react';
 import db from '../../db/database';
 import useCartStore from '../../stores/cartStore';
-import useAuthStore from '../../stores/authStore';
 import PaymentModal from '../payment/PaymentModal';
 import { useToast } from '../../components/Toast/Toast';
 import './POSScreen.css';

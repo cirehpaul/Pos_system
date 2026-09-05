@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingCart, Package, FolderOpen,
   ClipboardList, BarChart3, Archive, Settings, LogOut,
-  Menu, X, Users, ChevronLeft
+  Menu, Users, ChevronLeft, Clock
 } from 'lucide-react';
 import useAuthStore from '../../stores/authStore';
 import './Layout.css';
@@ -16,7 +16,8 @@ const navItems = [
   { path: '/sales', icon: ClipboardList, label: 'Sales History', roles: ['owner', 'cashier'] },
   { path: '/inventory', icon: Archive, label: 'Inventory', roles: ['owner'] },
   { path: '/reports', icon: BarChart3, label: 'Reports', roles: ['owner'] },
-  { path: '/users', icon: Users, label: 'Users', roles: ['owner'] },
+  { path: '/users', icon: Users, label: 'User Management', roles: ['owner'] },
+  { path: '/login-history', icon: Clock, label: 'Login History', roles: ['owner'] },
   { path: '/settings', icon: Settings, label: 'Settings', roles: ['owner'] },
 ];
 
@@ -24,19 +25,32 @@ export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { currentUser, logout } = useAuthStore();
   const location = useLocation();
+  const navigate = useNavigate();
   const isPOS = location.pathname === '/pos';
+
+  const displayName = currentUser?.displayName || currentUser?.name || 'User';
+  const roleLabel = currentUser?.role === 'owner' ? 'Owner' : 'Cashier';
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   // In POS mode, hide sidebar by default for maximum screen space
   if (isPOS) {
     return (
       <div className="layout layout--pos">
         <div className="pos-header">
-          <NavLink to="/dashboard" className="pos-back-btn">
+          <NavLink to={currentUser?.role === 'owner' ? '/dashboard' : '/pos'} className="pos-back-btn">
             <ChevronLeft size={20} />
             <span>Back</span>
           </NavLink>
           <div className="pos-header-info">
-            <span className="pos-cashier">Cashier: {currentUser?.name}</span>
+            <span className="pos-cashier">{displayName} — {roleLabel}</span>
+            <button className="pos-logout-btn" onClick={handleLogout} title="Logout">
+              <LogOut size={18} />
+              <span>Logout</span>
+            </button>
           </div>
         </div>
         <main className="layout__content layout__content--pos">
@@ -89,16 +103,16 @@ export default function Layout({ children }) {
         <div className="sidebar__footer">
           <div className="sidebar__user">
             <div className="sidebar__avatar">
-              {currentUser?.name?.charAt(0).toUpperCase()}
+              {displayName.charAt(0).toUpperCase()}
             </div>
             {sidebarOpen && (
               <div className="sidebar__user-info">
-                <span className="sidebar__user-name">{currentUser?.name}</span>
-                <span className="sidebar__user-role">{currentUser?.role}</span>
+                <span className="sidebar__user-name">{displayName}</span>
+                <span className="sidebar__user-role">{roleLabel}</span>
               </div>
             )}
           </div>
-          <button className="sidebar__logout" onClick={logout} title="Logout">
+          <button className="sidebar__logout" onClick={handleLogout} title="Logout">
             <LogOut size={20} />
             {sidebarOpen && <span>Logout</span>}
           </button>

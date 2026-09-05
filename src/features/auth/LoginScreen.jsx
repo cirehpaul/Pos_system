@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, Delete, LogIn } from 'lucide-react';
 import useAuthStore from '../../stores/authStore';
@@ -35,7 +35,7 @@ export default function LoginScreen() {
     setError('');
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (pin.length < 4) {
       setError('Enter at least 4 digits');
       return;
@@ -47,13 +47,13 @@ export default function LoginScreen() {
       setTimeout(() => setShake(false), 500);
       setPin('');
     }
-  };
+  }, [pin, login]);
 
   useEffect(() => {
     if (pin.length === 4) {
       handleSubmit();
     }
-  }, [pin]);
+  }, [pin, handleSubmit]);
 
   if (loading) {
     return (

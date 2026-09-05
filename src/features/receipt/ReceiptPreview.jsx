@@ -1,7 +1,33 @@
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import db from '../../db/database';
 import './ReceiptPreview.css';
 
 export default function ReceiptPreview({ order }) {
+  const [storeInfo, setStoreInfo] = useState({
+    storeName: 'My Food Shop',
+    storeAddress: '123 Main Street, City',
+    receiptFooter: 'Thank you for your purchase!'
+  });
+
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const settings = await db.settings.toArray();
+        const map = {};
+        settings.forEach(s => { map[s.key] = s.value; });
+        setStoreInfo(prev => ({
+          storeName: map.storeName || prev.storeName,
+          storeAddress: map.storeAddress || prev.storeAddress,
+          receiptFooter: map.receiptFooter || prev.receiptFooter
+        }));
+      } catch (err) {
+        console.error('Failed to load store settings for receipt:', err);
+      }
+    }
+    loadSettings();
+  }, []);
+
   if (!order) return null;
 
   return (
@@ -9,8 +35,8 @@ export default function ReceiptPreview({ order }) {
       <div className="receipt__paper">
         {/* Header */}
         <div className="receipt__header">
-          <h3 className="receipt__store-name">My Food Shop</h3>
-          <p className="receipt__store-address">123 Main Street, City</p>
+          <h3 className="receipt__store-name">{storeInfo.storeName}</h3>
+          <p className="receipt__store-address">{storeInfo.storeAddress}</p>
           <div className="receipt__divider">{'─'.repeat(32)}</div>
         </div>
 
@@ -92,7 +118,7 @@ export default function ReceiptPreview({ order }) {
 
         {/* Footer */}
         <div className="receipt__footer">
-          <p>Thank you for your purchase!</p>
+          <p>{storeInfo.receiptFooter}</p>
           <p className="receipt__footer-small">Please come again</p>
         </div>
       </div>

@@ -25,6 +25,7 @@ const useCartStore = create((set, get) => ({
           productId: product.id,
           name: product.name,
           price: product.price,
+          cost: product.cost || 0,  // Snapshot cost for COGS calculation
           image: product.image,
           quantity: 1,
           subtotal: product.price,

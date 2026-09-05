@@ -9,10 +9,8 @@ import useAuthStore from './stores/authStore';
 import ProductsScreen from './features/products/ProductsScreen';
 import SalesScreen from './features/sales/SalesScreen';
 import InventoryScreen from './features/inventory/InventoryScreen';
-// Dummy components for unbuilt screens
-const ReportsScreen = () => <div style={{padding: '20px'}}><h2>Reports (Coming Soon)</h2></div>;
-const UsersScreen = () => <div style={{padding: '20px'}}><h2>Users (Coming Soon)</h2></div>;
-const SettingsScreen = () => <div style={{padding: '20px'}}><h2>Settings (Coming Soon)</h2></div>;
+import ReportsScreen from './features/reports/ReportsScreen';
+import SettingsScreen from './features/settings/SettingsScreen';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, currentUser } = useAuthStore();
@@ -79,13 +77,19 @@ function App() {
         
         <Route path="/users" element={
           <ProtectedRoute allowedRoles={['owner']}>
-            <UsersScreen />
+            <SettingsScreen defaultTab="accounts" />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/login-history" element={
+          <ProtectedRoute allowedRoles={['owner']}>
+            <SettingsScreen defaultTab="loginHistory" />
           </ProtectedRoute>
         } />
         
         <Route path="/settings" element={
           <ProtectedRoute allowedRoles={['owner']}>
-            <SettingsScreen />
+            <SettingsScreen defaultTab="store" />
           </ProtectedRoute>
         } />
 

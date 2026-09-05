@@ -58,6 +58,7 @@ export default function CategoriesScreen() {
       setFormData({ name: '', color: '#6366f1' });
       loadCategories();
     } catch (err) {
+      console.error('Failed to save category:', err);
       toast.error('Failed to save category');
     }
   };
@@ -75,6 +76,7 @@ export default function CategoriesScreen() {
       setDeleteConfirm(null);
       loadCategories();
     } catch (err) {
+      console.error('Failed to delete category:', err);
       toast.error('Failed to delete category');
     }
   };

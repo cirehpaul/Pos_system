@@ -26,6 +26,11 @@ export default function InventoryScreen() {
     setProducts(prods);
   };
 
+  const isProductLowStock = (p) => {
+    const minThreshold = p.minStock !== undefined && p.minStock !== null ? p.minStock : 10;
+    return p.stock > 0 && p.stock <= minThreshold;
+  };
+
   const handleRestockSubmit = async (e) => {
     e.preventDefault();
     if (!addQty || parseInt(addQty, 10) <= 0) {
@@ -34,11 +39,25 @@ export default function InventoryScreen() {
     }
 
     try {
-      const newStock = restockProduct.stock + parseInt(addQty, 10);
+      const qty = parseInt(addQty, 10);
+      const newStock = restockProduct.stock + qty;
       await db.products.update(restockProduct.id, {
         stock: newStock,
         status: 'available', // If it was out_of_stock, it's now available
         updatedAt: new Date().toISOString()
+      });
+
+      await db.inventoryTransactions.add({
+        id: crypto.randomUUID(),
+        productId: restockProduct.id,
+        type: 'restock',
+        quantity: qty,
+        costPerUnit: restockProduct.cost || 0,
+        previousStock: restockProduct.stock,
+        newStock,
+        reference: '',
+        notes: 'Restocked from inventory management',
+        createdAt: new Date().toISOString()
       });
       
       toast.success(`Added ${addQty} units to ${restockProduct.name}`);
@@ -46,6 +65,7 @@ export default function InventoryScreen() {
       setAddQty('');
       loadData();
     } catch (err) {
+      console.error('Failed to update stock:', err);
       toast.error('Failed to update stock');
     }
   };
@@ -55,7 +75,7 @@ export default function InventoryScreen() {
     
     let matchesStatus = true;
     if (statusFilter === 'low') {
-      matchesStatus = p.stock > 0 && p.stock <= 10;
+      matchesStatus = isProductLowStock(p);
     } else if (statusFilter === 'out') {
       matchesStatus = p.stock === 0 || p.status === 'out_of_stock';
     }
@@ -65,7 +85,7 @@ export default function InventoryScreen() {
 
   // Calculate quick stats
   const outOfStockCount = products.filter(p => p.stock === 0 || p.status === 'out_of_stock').length;
-  const lowStockCount = products.filter(p => p.stock > 0 && p.stock <= 10).length;
+  const lowStockCount = products.filter(isProductLowStock).length;
   const totalItems = products.reduce((sum, p) => sum + p.stock, 0);
 
   return (
@@ -125,7 +145,7 @@ export default function InventoryScreen() {
           <Filter size={18} className="filter-select__icon" />
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
             <option value="all">All Statuses</option>
-            <option value="low">Low Stock (≤10)</option>
+            <option value="low">Low Stock</option>
             <option value="out">Out of Stock</option>
           </select>
         </div>
@@ -154,7 +174,7 @@ export default function InventoryScreen() {
               <tbody>
                 {filteredProducts.map(prod => {
                   const category = categories.find(c => c.id === prod.categoryId);
-                  const isLowStock = prod.stock > 0 && prod.stock <= 10;
+                  const isLowStock = isProductLowStock(prod);
                   const isOutOfStock = prod.stock <= 0 || prod.status === 'out_of_stock';
 
                   return (
