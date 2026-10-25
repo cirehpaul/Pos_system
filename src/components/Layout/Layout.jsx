@@ -1,18 +1,17 @@
 import { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, ShoppingCart, Package, FolderOpen,
+  LayoutDashboard, ShoppingCart, 
   ClipboardList, BarChart3, Archive, Settings, LogOut,
-  Menu, Users, ChevronLeft, Clock
+  Menu, Users, ChevronLeft, Clock, ArrowLeftRight
 } from 'lucide-react';
 import useAuthStore from '../../stores/authStore';
 import './Layout.css';
 
 const navItems = [
-  { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['owner'] },
-  { path: '/pos', icon: ShoppingCart, label: 'POS', roles: ['owner', 'cashier'] },
-  { path: '/categories', icon: FolderOpen, label: 'Categories', roles: ['owner'] },
-  { path: '/products', icon: Package, label: 'Products', roles: ['owner'] },
+  { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard & Accounting', roles: ['owner', 'cashier'] },
+  { path: '/pos', icon: ShoppingCart, label: 'POS / Bar Billing', roles: ['owner', 'cashier'] },
+  { path: '/transactions', icon: ArrowLeftRight, label: 'Money Transactions', roles: ['owner', 'cashier'] },
   { path: '/sales', icon: ClipboardList, label: 'Sales History', roles: ['owner', 'cashier'] },
   { path: '/inventory', icon: Archive, label: 'Inventory', roles: ['owner'] },
   { path: '/reports', icon: BarChart3, label: 'Reports', roles: ['owner'] },
@@ -29,7 +28,7 @@ export default function Layout({ children }) {
   const isPOS = location.pathname === '/pos';
 
   const displayName = currentUser?.displayName || currentUser?.name || 'User';
-  const roleLabel = currentUser?.role === 'owner' ? 'Owner' : 'Cashier';
+  const roleLabel = currentUser?.role === 'owner' ? 'Owner / Admin' : 'Cashier';
 
   const handleLogout = async () => {
     await logout();
@@ -41,10 +40,30 @@ export default function Layout({ children }) {
     return (
       <div className="layout layout--pos">
         <div className="pos-header">
-          <NavLink to={currentUser?.role === 'owner' ? '/dashboard' : '/pos'} className="pos-back-btn">
-            <ChevronLeft size={20} />
-            <span>Back</span>
-          </NavLink>
+          <div className="pos-header-left">
+            <NavLink
+              to="/dashboard"
+              className="pos-back-btn"
+              title="Go to Dashboard & Accounting"
+            >
+              <ChevronLeft size={20} />
+              <span>Dashboard</span>
+            </NavLink>
+            <div className="pos-nav-shortcuts">
+              <NavLink to="/dashboard" className="pos-nav-shortcut" title="View Live Accounting Dashboard">
+                <LayoutDashboard size={15} />
+                <span>Accounting</span>
+              </NavLink>
+              <NavLink to="/transactions" className="pos-nav-shortcut" title="Cater Client Money Transactions">
+                <ArrowLeftRight size={15} />
+                <span>Transactions</span>
+              </NavLink>
+              <NavLink to="/sales" className="pos-nav-shortcut" title="View Sales History">
+                <ClipboardList size={15} />
+                <span>Sales</span>
+              </NavLink>
+            </div>
+          </div>
           <div className="pos-header-info">
             <span className="pos-cashier">{displayName} — {roleLabel}</span>
             <button className="pos-logout-btn" onClick={handleLogout} title="Logout">
@@ -68,9 +87,21 @@ export default function Layout({ children }) {
           {sidebarOpen && (
             <div className="sidebar__brand">
               <div className="sidebar__logo">
-                <ShoppingCart size={24} />
+                <img
+                  src="/LUCID.png"
+                  alt="Lucid Logo"
+                  className="sidebar__logo-img"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    const icon = document.getElementById('sidebar-logo-fallback');
+                    if (icon) icon.style.display = 'flex';
+                  }}
+                />
+                <span id="sidebar-logo-fallback" style={{ display: 'none' }}>
+                  <ShoppingCart size={22} />
+                </span>
               </div>
-              <span className="sidebar__title">FoodPOS</span>
+              <span className="sidebar__title">Lucid: The Youth Generation</span>
             </div>
           )}
           <button

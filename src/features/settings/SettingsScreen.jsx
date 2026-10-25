@@ -20,9 +20,9 @@ export default function SettingsScreen({ defaultTab = 'accounts' }) {
   // Account Management
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [showPin, setShowPin] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [userForm, setUserForm] = useState({
-    name: '', displayName: '', pin: '', role: 'cashier', status: 'active'
+    name: '', displayName: '', username: '', password: '', role: 'cashier', status: 'active'
   });
 
   // Login History
@@ -85,8 +85,8 @@ export default function SettingsScreen({ defaultTab = 'accounts' }) {
 
   const openCreateUser = () => {
     setEditingUser(null);
-    setUserForm({ name: '', displayName: '', pin: '', role: 'cashier', status: 'active' });
-    setShowPin(false);
+    setUserForm({ name: '', displayName: '', username: '', password: '', role: 'cashier', status: 'active' });
+    setShowPassword(false);
     setShowUserModal(true);
   };
 
@@ -95,33 +95,42 @@ export default function SettingsScreen({ defaultTab = 'accounts' }) {
     setUserForm({
       name: user.name,
       displayName: user.displayName || user.name,
-      pin: user.pin,
+      username: user.username || '',
+      password: '', // Don't show the existing password
       role: user.role,
       status: user.status || 'active'
     });
-    setShowPin(false);
+    setShowPassword(false);
     setShowUserModal(true);
   };
 
   const handleSaveUser = async (e) => {
     e.preventDefault();
     if (!userForm.name.trim()) { toast.error('Name is required'); return; }
-    if (!userForm.pin || userForm.pin.length < 4) { toast.error('PIN must be at least 4 digits'); return; }
+    if (!userForm.username.trim()) { toast.error('Username is required'); return; }
+    if (!editingUser && !userForm.password) { toast.error('Password is required'); return; }
+    if (userForm.password && userForm.password.length < 4) { toast.error('Password must be at least 4 characters'); return; }
 
     let result;
     if (editingUser) {
-      result = await updateUser(editingUser.id, {
+      const updateData = {
         name: userForm.name.trim(),
         displayName: userForm.displayName.trim() || userForm.name.trim(),
-        pin: userForm.pin,
+        username: userForm.username.trim(),
         role: userForm.role,
         status: userForm.status
-      });
+      };
+      // Only update password if a new one is provided
+      if (userForm.password) {
+        updateData.password = userForm.password;
+      }
+      result = await updateUser(editingUser.id, updateData);
     } else {
       result = await addUser({
         name: userForm.name.trim(),
         displayName: userForm.displayName.trim() || userForm.name.trim(),
-        pin: userForm.pin,
+        username: userForm.username.trim(),
+        password: userForm.password,
         role: userForm.role,
         status: userForm.status
       });
@@ -215,7 +224,7 @@ export default function SettingsScreen({ defaultTab = 'accounts' }) {
                     </div>
                     <div className="user-card__info">
                       <span className="user-card__display-name">{user.displayName || user.name}</span>
-                      <span className="user-card__username">{user.name}</span>
+                      <span className="user-card__username">@{user.username || user.name}</span>
                     </div>
                     <div className="user-card__badges">
                       <span className={`role-badge role-badge--${user.role}`}>
@@ -227,7 +236,7 @@ export default function SettingsScreen({ defaultTab = 'accounts' }) {
                     </div>
                   </div>
                   <div className="user-card__meta">
-                    <span>PIN: {'•'.repeat((user.pin || '').length)}</span>
+                    <span>Username: <strong>{user.username || '—'}</strong></span>
                     <span>Created: {format(new Date(user.createdAt), 'MMM dd, yyyy')}</span>
                   </div>
                   <div className="user-card__actions">
@@ -425,27 +434,36 @@ export default function SettingsScreen({ defaultTab = 'accounts' }) {
         title={editingUser ? 'Edit Account' : 'Create New Account'} size="sm">
         <form onSubmit={handleSaveUser} className="category-form">
           <div className="form-group">
-            <label>Account Name (Username)</label>
+            <label>Full Name</label>
             <input type="text" required value={userForm.name}
               onChange={e => setUserForm(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="e.g. cashier01" />
+              placeholder="e.g. Juan Dela Cruz" />
           </div>
           <div className="form-group">
             <label>Display Name</label>
             <input type="text" value={userForm.displayName}
               onChange={e => setUserForm(prev => ({ ...prev, displayName: e.target.value }))}
-              placeholder="e.g. Cire - Cashier" />
+              placeholder="e.g. Juan - Cashier" />
             <small className="form-hint">This name will be shown in the interface and reports</small>
           </div>
           <div className="form-group">
-            <label>PIN</label>
+            <label>Username</label>
+            <input type="text" required value={userForm.username}
+              onChange={e => setUserForm(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/\s/g, '') }))}
+              placeholder="e.g. juan01" />
+            <small className="form-hint">Used for login — no spaces, lowercase</small>
+          </div>
+          <div className="form-group">
+            <label>{editingUser ? 'New Password (leave blank to keep current)' : 'Password'}</label>
             <div className="pin-input-wrapper">
-              <input type={showPin ? 'text' : 'password'} required minLength="4" maxLength="6"
-                value={userForm.pin}
-                onChange={e => setUserForm(prev => ({ ...prev, pin: e.target.value.replace(/\D/g, '') }))}
-                placeholder="4–6 digit PIN" />
-              <button type="button" className="pin-toggle" onClick={() => setShowPin(!showPin)}>
-                {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
+              <input type={showPassword ? 'text' : 'password'}
+                required={!editingUser}
+                minLength="4"
+                value={userForm.password}
+                onChange={e => setUserForm(prev => ({ ...prev, password: e.target.value }))}
+                placeholder={editingUser ? 'Leave blank to keep current' : 'Min. 4 characters'} />
+              <button type="button" className="pin-toggle" onClick={() => setShowPassword(!showPassword)}>
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>

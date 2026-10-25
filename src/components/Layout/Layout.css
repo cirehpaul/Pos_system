@@ -53,12 +53,20 @@
   width: 40px;
   height: 40px;
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.sidebar__logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: var(--radius-md);
 }
 
 .sidebar__title {
@@ -239,6 +247,12 @@
   min-height: 48px;
 }
 
+.pos-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
 .pos-back-btn {
   display: flex;
   align-items: center;
@@ -255,6 +269,36 @@
 .pos-back-btn:hover {
   background: var(--color-bg-tertiary);
   color: var(--color-text-primary);
+}
+
+.pos-nav-shortcuts {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: var(--space-2);
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--color-border);
+}
+
+.pos-nav-shortcut {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+  border: 1px solid var(--color-border);
+}
+
+.pos-nav-shortcut:hover {
+  background: var(--color-primary-100);
+  color: var(--color-primary);
+  border-color: var(--color-primary-300);
 }
 
 .pos-header-info {

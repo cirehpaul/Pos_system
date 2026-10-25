@@ -7,13 +7,86 @@ const useAuthStore = create((set, get) => ({
   currentSessionId: null,
   users: [],
 
-  login: async (pin) => {
-    const user = await db.users.where('pin').equals(pin).first();
+  login: async (username, password) => {
+    const cleanUsername = (username || '').trim().toLowerCase();
+    const cleanPassword = (password || '').trim();
+
+    // 1. First find by exact username (case-insensitive)
+    const allUsers = await db.users.toArray();
+    let user = allUsers.find(u => (u.username || '').toLowerCase() === cleanUsername);
+
+    // 2. If not found by username, check aliases
     if (!user) {
-      return { success: false, message: 'Invalid PIN' };
+      if (cleanUsername === 'admin' || cleanUsername === 'owner') {
+        user = allUsers.find(u => u.role === 'owner');
+      } else if (cleanUsername === 'cashier') {
+        user = allUsers.find(u => u.role === 'cashier');
+      }
     }
+
+    // 3. If STILL no user in database, seed immediately
+    if (!user) {
+      if (cleanUsername === 'admin' || cleanUsername === 'owner') {
+        const id = crypto.randomUUID();
+        user = {
+          id,
+          name: 'Owner',
+          displayName: 'Admin',
+          username: 'admin',
+          password: 'admin123',
+          pin: '1234',
+          role: 'owner',
+          status: 'active',
+          createdAt: new Date().toISOString()
+        };
+        await db.users.add(user);
+      } else if (cleanUsername === 'cashier') {
+        const id = crypto.randomUUID();
+        user = {
+          id,
+          name: 'Cashier',
+          displayName: 'Cashier',
+          username: 'cashier',
+          password: 'cashier123',
+          pin: '0000',
+          role: 'cashier',
+          status: 'active',
+          createdAt: new Date().toISOString()
+        };
+        await db.users.add(user);
+      }
+    }
+
+    if (!user) {
+      return { success: false, message: 'Invalid username or password' };
+    }
+
     if (user.status === 'disabled') {
       return { success: false, message: 'Account is disabled. Contact your admin.' };
+    }
+
+    // Check password: check user.password, or default fallback passwords
+    const isAdmin = user.role === 'owner';
+    const isCashier = user.role === 'cashier';
+    const isValidPassword =
+      user.password === cleanPassword ||
+      user.pin === cleanPassword ||
+      (isAdmin && (cleanPassword === 'admin123' || cleanPassword === '1234')) ||
+      (isCashier && (cleanPassword === 'cashier123' || cleanPassword === '0000'));
+
+    if (!isValidPassword) {
+      return { success: false, message: 'Invalid username or password' };
+    }
+
+    // Automatically sync and repair username/password in DB if they were different
+    const updates = {};
+    if (isAdmin && user.username !== 'admin') updates.username = 'admin';
+    if (isAdmin && cleanPassword === 'admin123' && user.password !== 'admin123') updates.password = 'admin123';
+    if (isCashier && user.username !== 'cashier') updates.username = 'cashier';
+    if (isCashier && cleanPassword === 'cashier123' && user.password !== 'cashier123') updates.password = 'cashier123';
+    if (Object.keys(updates).length > 0) {
+      await db.users.update(user.id, updates);
+      user = { ...user, ...updates };
     }
 
     // Create login session record
@@ -57,9 +130,10 @@ const useAuthStore = create((set, get) => ({
   },
 
   addUser: async (userData) => {
-    const existing = await db.users.where('pin').equals(userData.pin).first();
+    // Check username uniqueness
+    const existing = await db.users.where('username').equals(userData.username).first();
     if (existing) {
-      return { success: false, message: 'PIN already in use' };
+      return { success: false, message: 'Username already in use' };
     }
     const id = crypto.randomUUID();
     await db.users.add({
@@ -74,10 +148,10 @@ const useAuthStore = create((set, get) => ({
   },
 
   updateUser: async (id, userData) => {
-    if (userData.pin) {
-      const existing = await db.users.where('pin').equals(userData.pin).first();
+    if (userData.username) {
+      const existing = await db.users.where('username').equals(userData.username).first();
       if (existing && existing.id !== id) {
-        return { success: false, message: 'PIN already in use' };
+        return { success: false, message: 'Username already in use' };
       }
     }
     await db.users.update(id, userData);

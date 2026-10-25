@@ -1,13 +1,13 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
-  DollarSign, ShoppingBag, TrendingUp, AlertTriangle,
+  DollarSign, ShoppingBag, TrendingUp,
   BarChart3, PieChart, ArrowUpRight, ArrowDownRight,
-  Eye, Plus, Activity, Wallet, CreditCard, Banknote,
-  Smartphone, Receipt, ListMinus, Search,
-  Edit2, Trash2, RefreshCw, Layers, Printer
+  Eye, Activity, Wallet, Banknote,
+  Smartphone, Receipt, Building2,
+  RefreshCw, Layers, Printer
 } from 'lucide-react';
 import { format } from 'date-fns';
-import db, { formatCurrency, formatNumber } from '../../db/database';
+import { formatCurrency, formatNumber } from '../../db/database';
 import { getDashboardAnalytics } from '../../db/analyticsService';
 import useAuthStore from '../../stores/authStore';
 import Modal from '../../components/Modal/Modal';
@@ -164,55 +164,7 @@ function FinancialLineChart({ data }) {
   );
 }
 
-// ── Expense Breakdown Component ──
 
-function ExpenseBreakdown({ categories = [], total = 0 }) {
-  if (categories.length === 0) {
-    return <div className="chart-empty"><p>No expenses</p></div>;
-  }
-
-  // Show top 6, sum the rest as "Others"
-  let displayCats = [...categories];
-  let othersTotal = 0;
-  if (displayCats.length > 6) {
-    const rest = displayCats.splice(6);
-    othersTotal = rest.reduce((sum, c) => sum + c.total, 0);
-    displayCats.push({
-      category: 'Others',
-      total: othersTotal,
-      pct: total > 0 ? (othersTotal / total) * 100 : 0
-    });
-  }
-
-  return (
-    <div className="fin-chart-panel h-full">
-      <h3 className="fin-chart-title">Expense Breakdown</h3>
-      <p className="fin-chart-subtitle">See where your operating expenses are going.</p>
-      
-      <div className="expense-hbar-container">
-        {displayCats.map(cat => (
-          <div key={cat.category} className="expense-hbar-row" title={`${cat.category}: ${formatCurrency(cat.total)} (${cat.pct.toFixed(1)}%)`}>
-            <div className="expense-hbar-label">{cat.category}</div>
-            <div className="expense-hbar-track">
-              <div 
-                className="expense-hbar-fill" 
-                style={{ 
-                  width: `${cat.pct}%`, 
-                  backgroundColor: getCategoryColor(cat.category) 
-                }} 
-              />
-            </div>
-            <div className="expense-hbar-value">{formatCurrency(cat.total)}</div>
-          </div>
-        ))}
-        <div className="expense-hbar-total">
-          <span>Total Operating Expenses</span>
-          <span>{formatCurrency(total)}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ── Compact Financial Summary ──
 
@@ -259,46 +211,85 @@ function CompactFinancialSummary({ kpis }) {
 
 // ── Payment Methods Breakdown Card ──
 
+// ── 3 Categories of Bills Payment & Collections Card ──
+
 function PaymentDonut({ data }) {
   if (!data || !data.methods || data.methods.length === 0) {
     return (
       <div className="payment-empty">
-        <p>No transaction payments recorded</p>
+        <p>No billing or payment records for this period</p>
       </div>
     );
   }
 
   const colors = {
     cash: '#10b981',
-    gcash: '#007dfa',
-    maya: '#00d632',
-    card: '#8b5cf6',
+    bank_transfer: '#8b5cf6',
+    ewallet: '#007dfa',
     other: '#64748b'
   };
 
   const labels = {
     cash: 'Cash',
-    gcash: 'GCash',
-    maya: 'Maya',
-    card: 'Card',
+    bank_transfer: 'Bank Transfer',
+    ewallet: 'E-Wallet (GCash / Maya)',
     other: 'Other'
+  };
+
+  const subtitles = {
+    cash: 'Physical bills & coins',
+    bank_transfer: 'BDO, BPI, UnionBank, etc.',
+    ewallet: 'GCash & Maya digital payments',
+    other: 'Other collections'
   };
 
   const icons = {
     cash: Banknote,
-    gcash: Smartphone,
-    maya: Smartphone,
-    card: CreditCard,
+    bank_transfer: Building2,
+    ewallet: Smartphone,
     other: Wallet
   };
 
   return (
     <div className="payment-card-body">
       <div className="payment-total-banner">
-        <span className="text-secondary text-xs font-medium uppercase tracking-wide">Total Collected</span>
-        <span className="payment-total-amount">{formatCurrency(data.totalCollected)}</span>
+        <div>
+          <span className="text-secondary text-xs font-medium uppercase tracking-wide">Total Bills & Collections</span>
+          <div className="payment-total-amount">{formatCurrency(data.totalCollected)}</div>
+        </div>
+        <div className="payment-3-cat-pills">
+          <span className="badge badge--success">Cash</span>
+          <span className="badge badge--primary">Bank Transfer</span>
+          <span className="badge badge--info">GCash / Maya</span>
+        </div>
       </div>
 
+      {/* 3 Categories Mini Cards */}
+      <div className="payment-3-kpi-row">
+        {data.methods.map(s => {
+          const Icon = icons[s.method] || icons.other;
+          const color = colors[s.method] || colors.other;
+          return (
+            <div
+              key={s.method}
+              className="payment-cat-kpi"
+              style={{ '--kpi-border': color }}
+            >
+              <div className="payment-cat-kpi__header">
+                <div className="payment-cat-kpi__icon" style={{ backgroundColor: `${color}18`, color }}>
+                  <Icon size={16} />
+                </div>
+                <span className="payment-cat-kpi__pct">{s.pct}%</span>
+              </div>
+              <div className="payment-cat-kpi__total">{formatCurrency(s.total)}</div>
+              <div className="payment-cat-kpi__name">{labels[s.method] || s.method}</div>
+              <div className="payment-cat-kpi__count">{s.count} bill{s.count === 1 ? '' : 's'} paid</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Distribution Segment Bar */}
       <div className="payment-multi-bar">
         {data.methods.map(s => (
           <div
@@ -313,6 +304,7 @@ function PaymentDonut({ data }) {
         ))}
       </div>
 
+      {/* Itemized Legend List */}
       <div className="payment-legend-list">
         {data.methods.map(s => {
           const Icon = icons[s.method] || icons.other;
@@ -321,16 +313,20 @@ function PaymentDonut({ data }) {
             <div key={s.method} className="payment-row-item">
               <div className="payment-row-left">
                 <div className="payment-row-icon" style={{ backgroundColor: `${color}18`, color }}>
-                  <Icon size={16} />
+                  <Icon size={18} />
                 </div>
                 <div>
-                  <div className="payment-row-name">{labels[s.method] || s.method}</div>
-                  <div className="payment-row-count">{s.count} transaction{s.count === 1 ? '' : 's'}</div>
+                  <div className="payment-row-name font-bold">{labels[s.method] || s.method}</div>
+                  <div className="payment-row-count text-xs text-secondary">
+                    {subtitles[s.method] || subtitles.other} · {s.count} transaction{s.count === 1 ? '' : 's'}
+                  </div>
                 </div>
               </div>
               <div className="payment-row-right">
-                <div className="payment-row-val">{formatCurrency(s.total)}</div>
-                <div className="payment-row-pct">{s.pct}%</div>
+                <div className="payment-row-val font-bold" style={{ color }}>{formatCurrency(s.total)}</div>
+                <div className="payment-row-pct badge" style={{ backgroundColor: `${color}18`, color }}>
+                  {s.pct}%
+                </div>
               </div>
             </div>
           );
@@ -351,28 +347,6 @@ export default function DashboardScreen() {
   const [datePreset, setDatePreset] = useState('today');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
-  const [chartMetric, setChartMetric] = useState('all');
-
-  // Restock state
-  const [restockProduct, setRestockProduct] = useState(null);
-  const [addQty, setAddQty] = useState('');
-
-  // Top products sort
-  const [productSortBy, setProductSortBy] = useState('revenue'); // revenue, profit, sold, margin
-
-  // Expense management state
-  const [showExpenseModal, setShowExpenseModal] = useState(false);
-  const [editingExpense, setEditingExpense] = useState(null);
-  const [expenseSearch, setExpenseSearch] = useState('');
-  const [expenseCategoryFilter, setExpenseCategoryFilter] = useState('all');
-  const [expenseForm, setExpenseForm] = useState({
-    name: '',
-    category: 'Packaging',
-    amount: '',
-    date: format(new Date(), 'yyyy-MM-dd'),
-    time: format(new Date(), 'hh:mm a'),
-    notes: ''
-  });
 
   // Transaction view state
   const [viewingOrder, setViewingOrder] = useState(null);
@@ -393,161 +367,7 @@ export default function DashboardScreen() {
     loadData();
   }, [loadData]);
 
-  // Handle Quick Restock
-  const handleRestock = async (e) => {
-    e.preventDefault();
-    if (!addQty || parseInt(addQty, 10) <= 0) {
-      toast.error('Please enter a valid quantity');
-      return;
-    }
-    try {
-      const qty = parseInt(addQty, 10);
-      const newStock = restockProduct.stock + qty;
-      await db.products.update(restockProduct.id, {
-        stock: newStock,
-        status: 'available',
-        updatedAt: new Date().toISOString()
-      });
-      await db.inventoryTransactions.add({
-        id: crypto.randomUUID(),
-        productId: restockProduct.id,
-        type: 'restock',
-        quantity: qty,
-        costPerUnit: restockProduct.cost || 0,
-        previousStock: restockProduct.stock,
-        newStock,
-        reference: '',
-        notes: 'Quick restock from dashboard',
-        createdAt: new Date().toISOString()
-      });
-      toast.success(`Restocked ${qty} units for ${restockProduct.name}`);
-      setRestockProduct(null);
-      setAddQty('');
-      loadData();
-    } catch (err) {
-      console.error('Failed to update stock:', err);
-      toast.error('Failed to update stock');
-    }
-  };
 
-  // Open Add/Edit Expense
-  const handleOpenAddExpense = () => {
-    setEditingExpense(null);
-    setExpenseForm({
-      name: '',
-      category: 'Packaging',
-      amount: '',
-      date: datePreset === 'yesterday'
-        ? format(new Date(Date.now() - 86400000), 'yyyy-MM-dd')
-        : format(new Date(), 'yyyy-MM-dd'),
-      time: format(new Date(), 'hh:mm a'),
-      notes: ''
-    });
-    setShowExpenseModal(true);
-  };
-
-  const handleOpenEditExpense = (exp) => {
-    setEditingExpense(exp);
-    setExpenseForm({
-      name: exp.name || exp.description || '',
-      category: exp.category || 'Packaging',
-      amount: exp.amount || '',
-      date: exp.date ? format(new Date(exp.date), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
-      time: exp.time || format(new Date(exp.createdAt || new Date()), 'hh:mm a'),
-      notes: exp.notes || ''
-    });
-    setShowExpenseModal(true);
-  };
-
-  // Save Expense
-  const handleSaveExpense = async (e) => {
-    e.preventDefault();
-    if (!expenseForm.name.trim()) {
-      toast.error('Expense name is required');
-      return;
-    }
-    if (!expenseForm.amount || parseFloat(expenseForm.amount) <= 0) {
-      toast.error('Enter a valid amount');
-      return;
-    }
-
-    try {
-      const payload = {
-        name: expenseForm.name.trim(),
-        description: expenseForm.name.trim(),
-        category: expenseForm.category,
-        amount: parseFloat(expenseForm.amount),
-        date: expenseForm.date,
-        time: expenseForm.time,
-        notes: expenseForm.notes.trim(),
-        createdBy: currentUser?.displayName || currentUser?.name || 'Owner'
-      };
-
-      if (editingExpense) {
-        await db.expenses.update(editingExpense.id, {
-          ...payload,
-          updatedAt: new Date().toISOString()
-        });
-        toast.success('Expense updated');
-      } else {
-        await db.expenses.add({
-          id: crypto.randomUUID(),
-          ...payload,
-          createdAt: new Date().toISOString()
-        });
-        toast.success('Expense recorded');
-      }
-
-      setShowExpenseModal(false);
-      loadData();
-    } catch (err) {
-      console.error('Failed to save expense:', err);
-      toast.error('Failed to save expense');
-    }
-  };
-
-  // Delete Expense
-  const handleDeleteExpense = async (exp) => {
-    if (!window.confirm(`Delete expense "${exp.name || exp.description}" for ${formatCurrency(exp.amount)}?`)) {
-      return;
-    }
-    try {
-      await db.expenses.delete(exp.id);
-      toast.info('Expense deleted');
-      loadData();
-    } catch (err) {
-      console.error('Failed to delete expense:', err);
-      toast.error('Failed to delete expense');
-    }
-  };
-
-  // Filtered expenses
-  const filteredExpenses = useMemo(() => {
-    if (!analytics?.expenses) return [];
-    return analytics.expenses.filter(exp => {
-      const matchesCat = expenseCategoryFilter === 'all' || exp.category === expenseCategoryFilter;
-      const searchTarget = `${exp.name || ''} ${exp.description || ''} ${exp.notes || ''} ${exp.category || ''}`.toLowerCase();
-      const matchesSearch = !expenseSearch || searchTarget.includes(expenseSearch.toLowerCase());
-      return matchesCat && matchesSearch;
-    });
-  }, [analytics?.expenses, expenseCategoryFilter, expenseSearch]);
-
-  // Sorted Top Products
-  const sortedTopProducts = useMemo(() => {
-    if (!analytics?.topProducts) return [];
-    const list = [...analytics.topProducts];
-    switch (productSortBy) {
-      case 'profit':
-        return list.sort((a, b) => b.totalProfit - a.totalProfit);
-      case 'sold':
-        return list.sort((a, b) => b.unitsSold - a.unitsSold);
-      case 'margin':
-        return list.sort((a, b) => b.marginPct - a.marginPct);
-      case 'revenue':
-      default:
-        return list.sort((a, b) => b.totalSales - a.totalSales);
-    }
-  }, [analytics?.topProducts, productSortBy]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -583,7 +403,7 @@ export default function DashboardScreen() {
           </div>
         </div>
         <div className="dashboard__cards stagger-children">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+          {[1, 2, 3, 4, 5, 6].map(i => (
             <div key={i} className="kpi-card skeleton" style={{ height: 110 }}></div>
           ))}
         </div>
@@ -592,8 +412,6 @@ export default function DashboardScreen() {
   }
 
   const kpis = analytics?.kpis || {};
-  const daily = analytics?.dailyPerformance || {};
-  const scorecard = analytics?.profitability || {};
 
   return (
     <div className="dashboard animate-fade-in">
@@ -734,7 +552,7 @@ export default function DashboardScreen() {
           isNegative={kpis.profitMargin < 0}
         />
 
-        {/* 7. Orders */}
+        {/* Orders */}
         <KpiCard
           icon={ShoppingBag}
           label="Orders"
@@ -744,312 +562,29 @@ export default function DashboardScreen() {
           bg="#ecfeff"
           subtitle={`AOV: ${formatCurrency(kpis.aov)}`}
         />
-
-        {/* 8. Items Sold */}
-        <KpiCard
-          icon={Activity}
-          label="Items Sold"
-          value={`${formatNumber(kpis.totalItemsSold)} Units`}
-          change={kpis.totalItemsSoldChange}
-          color="#84cc16"
-          bg="#f7fee7"
-          subtitle="Total product volume"
-        />
       </div>
 
       {/* ════════════════════════════════════════════ */}
       {/* SECTION 2 & 3 — FINANCIAL ANALYTICS REDESIGN */}
       {/* ════════════════════════════════════════════ */}
       <FinancialLineChart data={analytics?.chartData || []} />
-      
+
       <div className="analytics-split">
-        <ExpenseBreakdown categories={analytics?.expensesByCategory || []} total={kpis.operatingExpenses || 0} />
         <CompactFinancialSummary kpis={kpis} />
-      </div>
 
-
-
-      {/* ════════════════════════════════════════════ */}
-      {/* SECTION 6 — EXPENSE MONITOR (FULL CRUD + CATEGORIES) */}
-      {/* ════════════════════════════════════════════ */}
-      <div className="dashboard__panel dashboard__panel--full">
-        <div className="dashboard__panel-header">
-          <div>
-            <h3><ListMinus size={18} /> Business Operating Expenses</h3>
-            <p className="text-secondary text-xs" style={{ marginTop: 2 }}>
-              Store overhead expenses (Rent, Utilities, Packaging, Supplies) strictly tracked separately from COGS
-            </p>
-          </div>
-          <div className="expense-header-actions">
-            <span className="expense-total-badge font-bold">
-              Total Expenses: {formatCurrency(kpis.operatingExpenses)}
-            </span>
-            <button
-              type="button"
-              className="btn btn--primary btn--small"
-              onClick={handleOpenAddExpense}
-            >
-              <Plus size={14} /> Add Expense
-            </button>
-          </div>
-        </div>
-
-        <div className="dashboard__panel-body">
-          {(!analytics?.expenses || analytics.expenses.length === 0) ? (
-            <div className="dashboard__empty">
-              <Receipt size={36} />
-              <p style={{ marginTop: 'var(--space-3)' }}>No business expenses logged for this period.</p>
-              <button
-                type="button"
-                className="btn btn--primary mt-3"
-                onClick={handleOpenAddExpense}
-              >
-                <Plus size={16} /> Log First Expense
-              </button>
-            </div>
-          ) : (
-            <div className="expense-monitor-layout">
-              {/* Category Breakdown Progress Bars */}
-              <div className="expense-categories-card">
-                <h4 className="section-small-title">Expenses by Category</h4>
-                <div className="category-bars-list">
-                  {analytics.expensesByCategory.map(cat => (
-                    <div key={cat.category} className="expense-cat-progress">
-                      <div className="expense-cat-meta">
-                        <span className="expense-cat-name">{cat.category}</span>
-                        <span className="expense-cat-amount">{formatCurrency(cat.total)}</span>
-                      </div>
-                      <div className="expense-cat-track">
-                        <div
-                          className="expense-cat-fill"
-                          style={{
-                            width: `${cat.pct}%`,
-                            backgroundColor: getCategoryColor(cat.category)
-                          }}
-                        />
-                      </div>
-                      <div className="expense-cat-sub">
-                        <span>{cat.pct}% of total</span>
-                        <span>{cat.count} item{cat.count === 1 ? '' : 's'}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Itemized Expense List with Controls */}
-              <div className="expense-table-card">
-                <div className="expense-toolbar">
-                  <div className="search-bar expense-search">
-                    <Search size={16} className="search-bar__icon" />
-                    <input
-                      type="search"
-                      placeholder="Search expense description, category, or notes..."
-                      value={expenseSearch}
-                      onChange={e => setExpenseSearch(e.target.value)}
-                    />
-                  </div>
-
-                  <select
-                    className="category-filter-select"
-                    value={expenseCategoryFilter}
-                    onChange={e => setExpenseCategoryFilter(e.target.value)}
-                  >
-                    <option value="all">All Categories</option>
-                    <option value="Packaging">Packaging</option>
-                    <option value="Transportation">Transportation</option>
-                    <option value="Supplies">Supplies</option>
-                    <option value="Utilities">Utilities</option>
-                    <option value="Rent">Rent</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="Maintenance">Maintenance</option>
-                    <option value="Operations">Operations</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-
-                <div className="responsive-table-wrapper" style={{ maxHeight: 380, overflowY: 'auto' }}>
-                  <table className="expense-itemized-table">
-                    <thead>
-                      <tr>
-                        <th>Expense Name</th>
-                        <th>Category</th>
-                        <th>Date & Time</th>
-                        <th>Notes</th>
-                        <th className="text-right">Amount</th>
-                        <th className="text-center">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredExpenses.map(exp => (
-                        <tr key={exp.id}>
-                          <td>
-                            <div className="expense-title-cell">
-                              <span
-                                className="cat-dot"
-                                style={{ backgroundColor: getCategoryColor(exp.category) }}
-                              />
-                              <span className="font-semibold text-main">{exp.name || exp.description}</span>
-                            </div>
-                          </td>
-                          <td>
-                            <span
-                              className="cat-pill"
-                              style={{
-                                backgroundColor: `${getCategoryColor(exp.category)}18`,
-                                color: getCategoryColor(exp.category)
-                              }}
-                            >
-                              {exp.category}
-                            </span>
-                          </td>
-                          <td className="text-secondary text-sm">
-                            {exp.date ? format(new Date(exp.date), 'MMM dd, yyyy') : '—'}
-                            {exp.time ? ` · ${exp.time}` : ''}
-                          </td>
-                          <td className="text-secondary text-xs max-w-xs truncate">{exp.notes || '—'}</td>
-                          <td className="text-right font-semibold text-danger">
-                            {formatCurrency(exp.amount)}
-                          </td>
-                          <td className="text-center">
-                            <div className="table-actions-inline">
-                              <button
-                                type="button"
-                                className="btn-icon"
-                                onClick={() => handleOpenEditExpense(exp)}
-                                title="Edit Expense"
-                              >
-                                <Edit2 size={14} />
-                              </button>
-                              <button
-                                type="button"
-                                className="btn-icon text-danger"
-                                onClick={() => handleDeleteExpense(exp)}
-                                title="Delete Expense"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ════════════════════════════════════════════ */}
-      {/* SECTION 7 & 8 — PAYMENT METHODS & TOP PRODUCTS */}
-      {/* ════════════════════════════════════════════ */}
-      <div className="dashboard__charts-row">
-        {/* Payment Methods */}
+        {/* Bills Payment & Collections — 3 Categories */}
         <div className="dashboard__panel">
           <div className="dashboard__panel-header">
-            <h3><PieChart size={18} /> Payment Methods Distribution</h3>
-            <span className="text-secondary text-xs">Actual collections for this period</span>
+            <h3><PieChart size={18} /> Bills Payment &amp; Collections</h3>
+            <span className="text-secondary text-xs">Cash · Bank Transfer · E-Wallet</span>
           </div>
           <div className="dashboard__panel-body">
             <PaymentDonut data={analytics?.paymentDistribution} />
           </div>
         </div>
-
-        {/* Top Products Performance */}
-        <div className="dashboard__panel">
-          <div className="dashboard__panel-header">
-            <h3><TrendingUp size={18} /> Top Products & Profitability</h3>
-            <div className="top-product-tabs">
-              {[
-                { key: 'revenue', label: 'Revenue' },
-                { key: 'profit', label: 'Gross Profit' },
-                { key: 'sold', label: 'Units Sold' },
-                { key: 'margin', label: 'Margin %' }
-              ].map(sort => (
-                <button
-                  key={sort.key}
-                  type="button"
-                  className={`sort-tab ${productSortBy === sort.key ? 'sort-tab--active' : ''}`}
-                  onClick={() => setProductSortBy(sort.key)}
-                >
-                  {sort.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="dashboard__panel-body">
-            {(!sortedTopProducts || sortedTopProducts.length === 0) ? (
-              <div className="dashboard__empty"><p>No product sales for this period.</p></div>
-            ) : (
-              <div className="top-products-enriched-list">
-                {sortedTopProducts.slice(0, 6).map((item, i) => (
-                  <div key={item.name} className="top-product-rich-item">
-                    <span className={`top-product-rank rank-${i + 1}`}>#{i + 1}</span>
-                    <div className="top-product-main">
-                      <div className="top-product-header-line">
-                        <span className="top-product-name">{item.name}</span>
-                        <span className="top-product-sales font-bold">{formatCurrency(item.totalSales)}</span>
-                      </div>
-                      <div className="top-product-sub-line">
-                        <span>{item.unitsSold} sold</span>
-                        <span>COGS: {formatCurrency(item.totalCogs)}</span>
-                        <span className="font-semibold text-success">Profit: {formatCurrency(item.totalProfit)}</span>
-                        <span className="margin-pill">{item.marginPct}%</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
-      {/* ════════════════════════════════════════════ */}
-      {/* SECTION 9 — LOW STOCK ALERT */}
-      {/* ════════════════════════════════════════════ */}
-      <div className="dashboard__panel dashboard__panel--full">
-        <div className="dashboard__panel-header">
-          <h3><AlertTriangle size={18} /> Low Stock Alert</h3>
-          <span className="text-secondary text-xs">Items requiring replenishment</span>
-        </div>
-        <div className="dashboard__panel-body">
-          {(!analytics?.lowStockItems || analytics.lowStockItems.length === 0) ? (
-            <div className="dashboard__empty dashboard__empty--success">
-              <p>All items are well stocked! ✓</p>
-            </div>
-          ) : (
-            <div className="lowstock-grid">
-              {analytics.lowStockItems.slice(0, 8).map(item => (
-                <div key={item.id} className="lowstock-card">
-                  <div className="lowstock-card__top">
-                    <span className="lowstock-card__name">{item.name}</span>
-                    <span className={`status-badge status-badge--${item.stock === 0 ? 'danger' : 'warning'}`}>
-                      {item.stock === 0 ? 'Out of Stock' : 'Low Stock'}
-                    </span>
-                  </div>
-                  <div className="lowstock-card__mid">
-                    <div className="stock-counter">
-                      <span className="stock-number">{item.stock}</span>
-                      <span className="stock-label">units left</span>
-                    </div>
-                    <span className="min-stock-hint">Min: {item.minStock || 10}</span>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn btn--primary btn--small w-full"
-                    onClick={() => setRestockProduct(item)}
-                  >
-                    <Plus size={14} /> Quick Restock
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+
 
       {/* ════════════════════════════════════════════ */}
       {/* SECTION 10 — RECENT TRANSACTIONS TABLE */}
@@ -1234,155 +769,6 @@ export default function DashboardScreen() {
         )}
       </Modal>
 
-      {/* ════════════════════════════════════════════ */}
-      {/* ADD / EDIT EXPENSE MODAL */}
-      {/* ════════════════════════════════════════════ */}
-      <Modal
-        isOpen={showExpenseModal}
-        onClose={() => setShowExpenseModal(false)}
-        title={editingExpense ? 'Edit Business Expense' : 'Record Operating Expense'}
-        size="md"
-      >
-        <form onSubmit={handleSaveExpense} className="expense-form">
-          <div className="form-group">
-            <label>Expense Name / Description <span className="text-danger">*</span></label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Biodegradable Takeout Packaging"
-              value={expenseForm.name}
-              onChange={e => setExpenseForm(prev => ({ ...prev, name: e.target.value }))}
-              autoFocus
-            />
-          </div>
-
-          <div className="form-row-2">
-            <div className="form-group">
-              <label>Category <span className="text-danger">*</span></label>
-              <select
-                value={expenseForm.category}
-                onChange={e => setExpenseForm(prev => ({ ...prev, category: e.target.value }))}
-              >
-                <option value="Packaging">Packaging</option>
-                <option value="Transportation">Transportation</option>
-                <option value="Supplies">Supplies</option>
-                <option value="Utilities">Utilities</option>
-                <option value="Rent">Rent</option>
-                <option value="Marketing">Marketing</option>
-                <option value="Maintenance">Maintenance</option>
-                <option value="Operations">Operations</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Amount (₱) <span className="text-danger">*</span></label>
-              <input
-                type="number"
-                step="0.01"
-                min="0.01"
-                required
-                placeholder="599.00"
-                value={expenseForm.amount}
-                onChange={e => setExpenseForm(prev => ({ ...prev, amount: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div className="form-row-2">
-            <div className="form-group">
-              <label>Date <span className="text-danger">*</span></label>
-              <input
-                type="date"
-                required
-                value={expenseForm.date}
-                onChange={e => setExpenseForm(prev => ({ ...prev, date: e.target.value }))}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Time</label>
-              <input
-                type="text"
-                placeholder="e.g. 04:00 PM"
-                value={expenseForm.time}
-                onChange={e => setExpenseForm(prev => ({ ...prev, time: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Notes / Receipt Reference (Optional)</label>
-            <textarea
-              rows={2}
-              placeholder="Receipt or vendor notes..."
-              value={expenseForm.notes}
-              onChange={e => setExpenseForm(prev => ({ ...prev, notes: e.target.value }))}
-            />
-          </div>
-
-          <div className="form-actions">
-            <button
-              type="button"
-              className="btn btn--ghost"
-              onClick={() => setShowExpenseModal(false)}
-            >
-              Cancel
-            </button>
-            <button type="submit" className="btn btn--primary">
-              {editingExpense ? 'Update Expense' : 'Record Expense'}
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* ════════════════════════════════════════════ */}
-      {/* QUICK RESTOCK MODAL */}
-      {/* ════════════════════════════════════════════ */}
-      <Modal
-        isOpen={!!restockProduct}
-        onClose={() => { setRestockProduct(null); setAddQty(''); }}
-        title="Quick Restock"
-        size="sm"
-      >
-        {restockProduct && (
-          <form onSubmit={handleRestock} className="category-form">
-            <div className="restock-info">
-              <span className="text-tertiary">Product:</span>
-              <span className="font-semibold">{restockProduct.name}</span>
-            </div>
-            <div className="restock-info mb-4">
-              <span className="text-tertiary">Current Stock:</span>
-              <span className="font-bold text-primary">{restockProduct.stock}</span>
-            </div>
-            <div className="form-group">
-              <label>Quantity to Add</label>
-              <input
-                type="number"
-                min="1"
-                step="1"
-                required
-                value={addQty}
-                onChange={e => setAddQty(e.target.value)}
-                placeholder="e.g. 50"
-                autoFocus
-              />
-            </div>
-            <div className="form-actions">
-              <button
-                type="button"
-                className="btn btn--ghost"
-                onClick={() => setRestockProduct(null)}
-              >
-                Cancel
-              </button>
-              <button type="submit" className="btn btn--primary">
-                Update Stock
-              </button>
-            </div>
-          </form>
-        )}
-      </Modal>
     </div>
   );
 }
@@ -1402,11 +788,14 @@ function KpiCard({ icon: Icon, label, value, change, color, bg, subtitle, isHigh
       <div className="kpi-card__top">
         <span className="kpi-card__label">{label}</span>
         <div className="kpi-card__icon">
-          <Icon size={20} />
+          <Icon size={18} />
         </div>
       </div>
-      <div className="kpi-card__body">
+      <div className="kpi-card__value-wrap">
         <span className="kpi-card__value">{value}</span>
+      </div>
+      <div className="kpi-card__bottom">
+        <span className="kpi-card__subtitle" title={subtitle || ''}>{subtitle || ''}</span>
         {hasChange && (
           <span className={`kpi-card__change ${change === 100 && value !== '₱0.00' && value !== '0 Units' && value !== '0 Orders' ? 'kpi-card__change--up' : isPositive ? 'kpi-card__change--up' : 'kpi-card__change--down'}`}>
             {change === 100 && (value !== '₱0.00' && value !== '0 Units' && value !== '0 Orders' && value !== '0%') ? (
@@ -1415,31 +804,15 @@ function KpiCard({ icon: Icon, label, value, change, color, bg, subtitle, isHigh
               <span>—</span>
             ) : (
               <>
-                {change >= 0 ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
-                <span>{Math.abs(change)}% vs prev</span>
+                {change >= 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                <span>{Math.abs(change)}%</span>
               </>
             )}
           </span>
         )}
       </div>
-      {subtitle && <span className="kpi-card__subtitle">{subtitle}</span>}
     </div>
   );
 }
 
-// ── Category Color Map Helper ──
 
-function getCategoryColor(category) {
-  const map = {
-    Packaging: '#8b5cf6',
-    Transportation: '#06b6d4',
-    Supplies: '#3b82f6',
-    Utilities: '#f59e0b',
-    Rent: '#ec4899',
-    Marketing: '#f97316',
-    Maintenance: '#ef4444',
-    Operations: '#6366f1',
-    Other: '#64748b'
-  };
-  return map[category] || '#64748b';
-}

@@ -9,13 +9,59 @@
   background: var(--color-bg-primary);
 }
 
-/* ── Left Panel: Products ── */
+/* ── Left Panel: Products & Floor Plan ── */
 .pos__products {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   border-right: 1px solid var(--color-border);
+}
+
+/* ── Top View Mode Switcher ── */
+.pos__view-mode-bar {
+  display: flex;
+  gap: var(--space-2);
+  padding: 8px 16px;
+  background: rgba(15, 23, 42, 0.7);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.pos__view-mode-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pos__view-mode-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-primary);
+}
+
+.pos__view-mode-btn--active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(79, 70, 229, 0.25) 100%);
+  border-color: #6366f1;
+  color: #818cf8;
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.2);
+}
+
+.pos__floorplan-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4);
+  -webkit-overflow-scrolling: touch;
 }
 
 .pos__categories {

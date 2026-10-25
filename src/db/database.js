@@ -56,6 +56,66 @@ db.version(3).stores({
   });
 });
 
+// Version 4 - Add username/password auth, transactions table, and clients table
+db.version(4).stores({
+  users: 'id, name, username, role, status, createdAt',
+  categories: 'id, name, sortOrder, createdAt',
+  products: 'id, name, categoryId, price, cost, stock, sku, minStock, status, createdAt, updatedAt',
+  orders: 'id, orderNumber, paymentMethod, cashierId, cashierName, status, createdAt',
+  settings: 'id, key',
+  inventoryTransactions: 'id, productId, type, reference, createdAt',
+  expenses: 'id, category, date, createdAt',
+  loginSessions: 'id, userId, userName, role, loginAt, logoutAt, status',
+  transactions: 'id, referenceNumber, type, clientId, clientName, cashierId, status, createdAt',
+  clients: 'id, name, email, contact, createdAt'
+}).upgrade(tx => {
+  // Migrate existing users: add username/password fields
+  return tx.table('users').toCollection().modify(user => {
+    if (!user.username) {
+      // Generate username from name (lowercase, no spaces)
+      user.username = (user.name || 'user').toLowerCase().replace(/\s+/g, '');
+    }
+    if (!user.password) {
+      // Default password = same as pin, or 'changeme'
+      user.password = user.pin || 'changeme';
+    }
+  });
+});
+
+// Version 5 - Add cashAudits table for money checking / cash drawer auditing
+db.version(5).stores({
+  users: 'id, name, username, role, status, createdAt',
+  categories: 'id, name, sortOrder, createdAt',
+  products: 'id, name, categoryId, price, cost, stock, sku, minStock, status, createdAt, updatedAt',
+  orders: 'id, orderNumber, paymentMethod, cashierId, cashierName, status, createdAt',
+  settings: 'id, key',
+  inventoryTransactions: 'id, productId, type, reference, createdAt',
+  expenses: 'id, category, date, createdAt',
+  loginSessions: 'id, userId, userName, role, loginAt, logoutAt, status',
+  transactions: 'id, referenceNumber, type, clientId, clientName, cashierId, status, createdAt',
+  clients: 'id, name, email, contact, createdAt',
+  cashAudits: 'id, cashierId, cashierName, countedAmount, expectedAmount, variance, status, createdAt'
+});
+
+// Version 6 - Add reservations table for event table & booth booking with billing
+db.version(6).stores({
+  users: 'id, name, username, role, status, createdAt',
+  categories: 'id, name, sortOrder, createdAt',
+  products: 'id, name, categoryId, price, cost, stock, sku, minStock, status, createdAt, updatedAt',
+  orders: 'id, orderNumber, paymentMethod, cashierId, cashierName, status, createdAt',
+  settings: 'id, key',
+  inventoryTransactions: 'id, productId, type, reference, createdAt',
+  expenses: 'id, category, date, createdAt',
+  loginSessions: 'id, userId, userName, role, loginAt, logoutAt, status',
+  transactions: 'id, referenceNumber, type, clientId, clientName, cashierId, status, createdAt',
+  clients: 'id, name, email, contact, createdAt',
+  cashAudits: 'id, cashierId, cashierName, countedAmount, expectedAmount, variance, status, createdAt',
+  reservations: 'id, reservationNumber, locationId, locationType, locationName, clientName, clientContact, status, paymentStatus, paymentCategory, cashierId, createdAt'
+}).upgrade(() => {
+  // No data migration needed — just adding the reservations table
+  return Promise.resolve();
+});
+
 // ── Financial Precision Helpers ──
 
 /**
@@ -84,13 +144,31 @@ export function formatNumber(num) {
   return (num || 0).toLocaleString('en-PH');
 }
 
+/**
+ * Generate a unique reference number: REF-YYYYMMDD-XXXXX
+ */
+export function generateReferenceNumber() {
+  const now = new Date();
+  const datePart = now.getFullYear().toString() +
+    String(now.getMonth() + 1).padStart(2, '0') +
+    String(now.getDate()).padStart(2, '0');
+  const randomPart = Math.random().toString(36).substring(2, 7).toUpperCase();
+  return `REF-${datePart}-${randomPart}`;
+}
+
+export function generateOrderNumber() {
+  const datePart = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+  const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `ORD-${datePart}-${randomPart}`;
+}
+
 let isInitializing = false;
 
 // Initialize default data on first run
 export async function initializeDatabase() {
   if (isInitializing) return;
   isInitializing = true;
-  
+
   try {
     const settingsCount = await db.settings.count();
     if (settingsCount === 0) {
@@ -105,6 +183,53 @@ export async function initializeDatabase() {
         } else {
           seenNames.add(cat.name);
         }
+      }
+
+      // Ensure admin user exists and has valid username/password
+      const allUsers = await db.users.toArray();
+      let owner = allUsers.find(u => u.role === 'owner' || u.username === 'admin');
+      if (owner) {
+        await db.users.update(owner.id, {
+          username: 'admin',
+          password: owner.password && owner.password !== '1234' && owner.password !== 'changeme' ? owner.password : 'admin123',
+          displayName: owner.displayName || 'Admin',
+          status: 'active'
+        });
+      } else {
+        await db.users.add({
+          id: crypto.randomUUID(),
+          name: 'Admin',
+          displayName: 'Admin',
+          username: 'admin',
+          password: 'admin123',
+          pin: '1234',
+          role: 'owner',
+          status: 'active',
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      // Ensure cashier user exists and has valid username/password
+      let cashier = allUsers.find(u => u.role === 'cashier' || u.username === 'cashier');
+      if (cashier) {
+        await db.users.update(cashier.id, {
+          username: 'cashier',
+          password: cashier.password && cashier.password !== '0000' && cashier.password !== 'changeme' ? cashier.password : 'cashier123',
+          displayName: cashier.displayName || 'Cashier',
+          status: 'active'
+        });
+      } else {
+        await db.users.add({
+          id: crypto.randomUUID(),
+          name: 'Cashier',
+          displayName: 'Cashier',
+          username: 'cashier',
+          password: 'cashier123',
+          pin: '0000',
+          role: 'cashier',
+          status: 'active',
+          createdAt: new Date().toISOString()
+        });
       }
     }
   } finally {
@@ -127,22 +252,26 @@ async function seedDatabase() {
     { id: crypto.randomUUID(), key: 'currency', value: '₱' },
   ]);
 
-  // Default admin user
+  // Default admin user (owner) with username/password
   await db.users.add({
     id: crypto.randomUUID(),
     name: 'Owner',
-    displayName: 'Owner',
+    displayName: 'Admin',
+    username: 'admin',
+    password: 'admin123',
     pin: '1234',
     role: 'owner',
     status: 'active',
     createdAt: new Date().toISOString()
   });
 
-  // Default cashier
+  // Default cashier with username/password
   await db.users.add({
     id: crypto.randomUUID(),
     name: 'Cashier',
     displayName: 'Cire - Cashier',
+    username: 'cashier',
+    password: 'cashier123',
     pin: '0000',
     role: 'cashier',
     status: 'active',

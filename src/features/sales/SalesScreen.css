@@ -79,7 +79,8 @@
   body * {
     visibility: hidden;
   }
-  .receipt-container, .receipt-container * {
+  .receipt-container, .receipt-container *,
+  .res-ticket-pass, .res-ticket-pass * {
     visibility: visible;
   }
   .receipt-container {

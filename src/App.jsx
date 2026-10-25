@@ -11,6 +11,8 @@ import SalesScreen from './features/sales/SalesScreen';
 import InventoryScreen from './features/inventory/InventoryScreen';
 import ReportsScreen from './features/reports/ReportsScreen';
 import SettingsScreen from './features/settings/SettingsScreen';
+import TransactionsScreen from './features/transactions/TransactionsScreen';
+import GuestPassScreen from './features/guest/GuestPassScreen';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, currentUser } = useAuthStore();
@@ -30,11 +32,14 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Public Guest Pass (accessible without login — guests scan QR code) */}
+        <Route path="/guest-pass" element={<GuestPassScreen />} />
+
         <Route path="/login" element={<LoginScreen />} />
         
         {/* Protected Routes */}
         <Route path="/dashboard" element={
-          <ProtectedRoute allowedRoles={['owner']}>
+          <ProtectedRoute allowedRoles={['owner', 'cashier']}>
             <DashboardScreen />
           </ProtectedRoute>
         } />
@@ -60,6 +65,12 @@ function App() {
         <Route path="/sales" element={
           <ProtectedRoute allowedRoles={['owner', 'cashier']}>
             <SalesScreen />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/transactions" element={
+          <ProtectedRoute allowedRoles={['owner', 'cashier']}>
+            <TransactionsScreen />
           </ProtectedRoute>
         } />
         

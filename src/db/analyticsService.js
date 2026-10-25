@@ -153,10 +153,11 @@ export async function getDashboardAnalytics(preset = 'today', customStart, custo
   const prevRange = getPreviousPeriodRange(preset, customStart, customEnd);
 
   // Parallel load of tables
-  const [allOrders, allProducts, allExpenses, lowStockThresholdSetting] = await Promise.all([
+  const [allOrders, allProducts, allExpenses, allTransactions, lowStockThresholdSetting] = await Promise.all([
     db.orders.toArray(),
     db.products.filter(p => p.status !== 'deleted').toArray(),
     db.expenses.toArray(),
+    db.transactions ? db.transactions.toArray() : Promise.resolve([]),
     db.settings.where('key').equals('lowStockThreshold').first()
   ]);
 
@@ -165,6 +166,13 @@ export async function getDashboardAnalytics(preset = 'today', customStart, custo
   // Filter orders for current and comparison periods
   const currentOrders = filterOrdersByRange(allOrders, range.start, range.end);
   const previousOrders = filterOrdersByRange(allOrders, prevRange.start, prevRange.end);
+
+  // Filter transactions for current period (bills payments, cash-ins)
+  const currentTransactions = (allTransactions || []).filter(t => {
+    if (!t.createdAt || t.status === 'voided') return false;
+    const d = new Date(t.createdAt);
+    return d >= range.start && d <= range.end;
+  });
 
   // Financial calculations
   const current = calculateFinancials(currentOrders, allProducts);
@@ -266,8 +274,8 @@ export async function getDashboardAnalytics(preset = 'today', customStart, custo
   // Top Products with full financial metrics
   const topProducts = buildTopProducts(currentOrders, allProducts);
 
-  // Payment Method Distribution
-  const paymentDistribution = buildPaymentDistribution(currentOrders);
+  // Payment Method Distribution (3 categories: Cash / Bank Transfer / E-Wallet GCash & Maya)
+  const paymentDistribution = buildPaymentDistribution(currentOrders, currentTransactions);
 
   // Cost lookup for enriching transactions
   const productCostMap = {};
@@ -529,32 +537,80 @@ function buildTopProducts(orders, products) {
   }).sort((a, b) => b.totalSales - a.totalSales);
 }
 
-// ── Payment Distribution ──
+// ── 3-Category Payment Distribution (Cash / Bank Transfer / E-Wallet GCash & Maya) ──
 
-function buildPaymentDistribution(orders) {
-  const dist = {};
+function normalizeCategory(method, provider) {
+  const m = (method || '').toLowerCase();
+  const p = (provider || '').toLowerCase();
+  if (m === 'bank_transfer' || m === 'bank' || p.includes('bank') || p.includes('bdo') || p.includes('bpi')) {
+    return 'bank_transfer';
+  }
+  if (m === 'ewallet' || m === 'gcash' || m === 'maya' || p === 'gcash' || p === 'maya') {
+    return 'ewallet';
+  }
+  return 'cash';
+}
+
+function buildPaymentDistribution(orders = [], transactions = []) {
+  const categories = {
+    cash: {
+      method: 'cash',
+      label: 'Cash',
+      subtitle: 'Physical Currency & Drawer',
+      count: 0,
+      total: 0,
+      color: '#10b981'
+    },
+    bank_transfer: {
+      method: 'bank_transfer',
+      label: 'Bank Transfer',
+      subtitle: 'BDO, BPI, UnionBank, etc.',
+      count: 0,
+      total: 0,
+      color: '#8b5cf6'
+    },
+    ewallet: {
+      method: 'ewallet',
+      label: 'E-Wallet (GCash / Maya)',
+      subtitle: 'GCash & Maya Payments',
+      count: 0,
+      total: 0,
+      color: '#007dfa'
+    }
+  };
+
   let grandTotal = 0;
 
+  // 1. Process POS Orders
   orders.forEach(order => {
-    const method = (order.paymentMethod || 'cash').toLowerCase();
-    if (!dist[method]) {
-      dist[method] = { method, count: 0, total: 0 };
-    }
+    const catKey = normalizeCategory(order.paymentCategory || order.paymentMethod, order.paymentProvider);
     const orderTotal = order.total || 0;
-    dist[method].count++;
-    dist[method].total += orderTotal;
+    categories[catKey].count++;
+    categories[catKey].total += orderTotal;
     grandTotal += orderTotal;
   });
 
-  const result = Object.values(dist).map(d => ({
-    ...d,
-    total: roundCurrency(d.total),
-    pct: grandTotal > 0 ? roundCurrency((d.total / grandTotal) * 100) : 0
+  // 2. Process Client Transactions (Bills Payments & Cash-ins)
+  transactions.forEach(txn => {
+    const catKey = normalizeCategory(txn.paymentCategory || txn.paymentMethod || txn.type, txn.paymentProvider);
+    const txnAmount = parseFloat(txn.amount || 0);
+    categories[catKey].count++;
+    categories[catKey].total += txnAmount;
+    grandTotal += txnAmount;
+  });
+
+  const methods = Object.values(categories).map(cat => ({
+    ...cat,
+    total: roundCurrency(cat.total),
+    pct: grandTotal > 0 ? roundCurrency((cat.total / grandTotal) * 100) : 0
   }));
 
   return {
     totalCollected: roundCurrency(grandTotal),
-    methods: result.sort((a, b) => b.total - a.total)
+    methods,
+    cashTotal: roundCurrency(categories.cash.total),
+    bankTotal: roundCurrency(categories.bank_transfer.total),
+    ewalletTotal: roundCurrency(categories.ewallet.total)
   };
 }
 
