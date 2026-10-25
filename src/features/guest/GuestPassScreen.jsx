@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ShieldCheck, Clock, QrCode, Download, CheckCircle2, XCircle, Timer } from 'lucide-react';
+import { ShieldCheck, Clock, QrCode, Download, CheckCircle2, XCircle, Timer, Sparkles, Check } from 'lucide-react';
 import { generateQRDataURL } from '../../utils/qrGenerator';
 import './GuestPassScreen.css';
 
@@ -9,6 +9,8 @@ export default function GuestPassScreen() {
   const [timeLeft, setTimeLeft] = useState('');
   const [expired, setExpired] = useState(false);
   const [qrDataURL, setQrDataURL] = useState(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
 
   // Extract pass data from URL params
   const slip = {
@@ -24,18 +26,23 @@ export default function GuestPassScreen() {
   };
 
   const isValid = !!params.get('ref');
-  const createdAt = new Date(slip.createdAt).getTime();
+  const rawDate = slip.createdAt;
+  const createdAt = !isNaN(rawDate) ? Number(rawDate) : new Date(rawDate).getTime();
   const expiresAt = createdAt + 24 * 60 * 60 * 1000;
 
-  // Generate self-referential QR (so guests can share or bookmark)
+  // Generate QR image asynchronously
   useEffect(() => {
-    try {
-      const currentURL = window.location.href;
-      const dataURL = generateQRDataURL(currentURL, 140);
-      setQrDataURL(dataURL);
-    } catch (e) {
-      console.error('Guest pass QR generation error', e);
-    }
+    let active = true;
+    (async () => {
+      try {
+        const currentURL = window.location.href;
+        const dataURL = await generateQRDataURL(currentURL, 180, '#000000', '#ffffff');
+        if (active) setQrDataURL(dataURL);
+      } catch (e) {
+        console.error('Guest pass QR generation error', e);
+      }
+    })();
+    return () => { active = false; };
   }, []);
 
   // 24hr countdown
@@ -51,7 +58,7 @@ export default function GuestPassScreen() {
       const h = Math.floor(diff / (1000 * 60 * 60));
       const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const s = Math.floor((diff % (1000 * 60)) / 1000);
-      setTimeLeft(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
+      setTimeLeft(`${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`);
     }
     tick();
     const iv = setInterval(tick, 1000);
@@ -65,10 +72,18 @@ export default function GuestPassScreen() {
   const formatCurrency = (v) =>
     new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
 
-  const handleSaveImage = () => {
-    import('../../utils/ticketDownloader').then(({ downloadTicketPassImage }) => {
-      downloadTicketPassImage(slip);
-    });
+  const handleSaveImage = async () => {
+    setDownloading(true);
+    try {
+      const { downloadTicketPassImage } = await import('../../utils/ticketDownloader');
+      await downloadTicketPassImage(slip);
+      setDownloaded(true);
+      setTimeout(() => setDownloaded(false), 3500);
+    } catch (err) {
+      console.error('Download error:', err);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   if (!isValid) {
@@ -83,8 +98,38 @@ export default function GuestPassScreen() {
 
   return (
     <div className="gp-root">
-      {/* Animated background */}
+      {/* Ambient background glow */}
       <div className="gp-bg-glow" />
+
+      {/* Top Instant Download Banner (Mobile user-friendly) */}
+      {!expired && (
+        <div className="gp-top-banner animate-fade-in">
+          <div className="gp-top-banner-info">
+            <span className="gp-top-badge">
+              <Sparkles size={11} /> VIP Pass Ready
+            </span>
+            <span className="gp-top-title">Tap below to save your pass soft copy</span>
+          </div>
+          <button
+            type="button"
+            className={`gp-top-dl-btn ${downloaded ? 'gp-top-dl-btn--done' : ''}`}
+            onClick={handleSaveImage}
+            disabled={downloading}
+          >
+            {downloaded ? (
+              <>
+                <Check size={16} /> Saved!
+              </>
+            ) : downloading ? (
+              <span>Saving...</span>
+            ) : (
+              <>
+                <Download size={16} /> Save Pass (PNG)
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       <div className={`gp-card${expired ? ' gp-card--expired' : ''}`}>
 
@@ -118,9 +163,31 @@ export default function GuestPassScreen() {
         {!expired && (
           <div className="gp-countdown-box">
             <Timer size={14} />
-            <span className="gp-countdown-label">Time Remaining</span>
+            <span className="gp-countdown-label">Time Remaining:</span>
             <span className="gp-countdown">{timeLeft}</span>
           </div>
+        )}
+
+        {/* Primary Download Button directly above details for instant access */}
+        {!expired && (
+          <button
+            type="button"
+            className={`gp-download-btn gp-download-btn--top ${downloaded ? 'gp-download-btn--done' : ''}`}
+            onClick={handleSaveImage}
+            disabled={downloading}
+          >
+            {downloaded ? (
+              <>
+                <Check size={18} />
+                <span>Ticket Soft Copy Saved to Photos!</span>
+              </>
+            ) : (
+              <>
+                <Download size={18} />
+                <span>{downloading ? 'Generating Soft Copy...' : 'Download Soft Copy (PNG)'}</span>
+              </>
+            )}
+          </button>
         )}
 
         {/* Perforation */}
@@ -133,8 +200,8 @@ export default function GuestPassScreen() {
             <span className="gp-detail-val gp-detail-val--name">{slip.clientName}</span>
           </div>
           <div className="gp-detail">
-            <span className="gp-detail-label">CAPACITY</span>
-            <span className="gp-detail-val">{slip.pax} Guests</span>
+            <span className="gp-detail-label">CAPACITY & ADMISSION</span>
+            <span className="gp-detail-val">{slip.pax} Guests (Consumable)</span>
           </div>
           <div className="gp-detail gp-detail--wide">
             <span className="gp-detail-label">SESSION / TIME</span>
@@ -147,7 +214,7 @@ export default function GuestPassScreen() {
           <div>
             <div className="gp-settlement-label">PAYMENT METHOD</div>
             <div className="gp-settlement-method">
-              {slip.paymentCategory.replace('_', ' ').toUpperCase()}
+              {(slip.paymentCategory || 'CASH').replace('_', ' ').toUpperCase()}
             </div>
             <div className="gp-settlement-cashier">Issued by {slip.cashierName}</div>
           </div>
@@ -169,7 +236,7 @@ export default function GuestPassScreen() {
             </div>
             <div className="gp-qr-hint">
               <QrCode size={14} />
-              <span>Share or save this page for re-entry</span>
+              <span>Scan or screenshot this QR for entrance verification</span>
             </div>
           </div>
         )}
@@ -177,17 +244,31 @@ export default function GuestPassScreen() {
         {/* Watermark */}
         <div className="gp-watermark">EXCLUSIVE ACCESS · NON-TRANSFERABLE · LUCID</div>
 
-        {/* Download button */}
+        {/* Bottom Download button */}
         {!expired && (
-          <button className="gp-download-btn" onClick={handleSaveImage}>
-            <Download size={18} />
-            <span>Download Digital Copy (PNG)</span>
+          <button
+            type="button"
+            className={`gp-download-btn ${downloaded ? 'gp-download-btn--done' : ''}`}
+            onClick={handleSaveImage}
+            disabled={downloading}
+          >
+            {downloaded ? (
+              <>
+                <Check size={18} />
+                <span>Ticket Saved Successfully!</span>
+              </>
+            ) : (
+              <>
+                <Download size={18} />
+                <span>Download Ticket Pass (PNG)</span>
+              </>
+            )}
           </button>
         )}
       </div>
 
       <p className="gp-footer-note">
-        This digital pass was issued by Lucid POS System.<br />
+        This digital pass was issued by Lucid.<br />
         Present upon entrance. Valid for 24 hours from time of issue.
       </p>
     </div>

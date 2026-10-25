@@ -85,7 +85,7 @@ export default function LoginScreen() {
               <Lock size={28} />
             </div>
           </div>
-          <h1 className="login-brand__title">Lucid: The Youth Generation System</h1>
+          <h1 className="login-brand__title">Lucid</h1>
           <p className="login-brand__subtitle">Sign in to your account</p>
         </div>
 

@@ -101,7 +101,7 @@ export default function Layout({ children }) {
                   <ShoppingCart size={22} />
                 </span>
               </div>
-              <span className="sidebar__title">Lucid: The Youth Generation</span>
+              <span className="sidebar__title">Lucid</span>
             </div>
           )}
           <button
