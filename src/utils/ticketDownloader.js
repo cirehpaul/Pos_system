@@ -92,37 +92,40 @@ export async function downloadTicketPassImage(slip) {
   // 4. Location / Table Title
   ctx.fillStyle = '#ffffff';
   ctx.font = '900 36px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  const cleanLocation = (slip.locationName || 'VIP Reservation').replace(/Â·/g, '·').replace(/Â/g, '');
+  const cleanTimeSlot = (slip.timeSlot || 'Event Night').replace(/Â·/g, '·').replace(/Â/g, '');
+
+  // 4. Location / Table Title
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '900 36px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(slip.locationName || 'VIP Reservation', width / 2, 215);
+  ctx.fillText(cleanLocation, width / 2, 215);
 
   // 5. Monospace Reference Bar
   ctx.fillStyle = '#fbbf24';
   ctx.font = '700 18px monospace';
-  const passDate = new Date(slip.createdAt || Date.now()).toLocaleDateString('en-US', {
+  const parsedDate = slip.createdAt ? (!isNaN(slip.createdAt) ? new Date(Number(slip.createdAt)) : new Date(slip.createdAt)) : new Date();
+  const safeDate = isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+  const passDate = safeDate.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric'
   });
   ctx.fillText(`PASS #${slip.reservationNumber || '0000'}  •  ${passDate}`, width / 2, 252);
 
-  // 6. Validity 24h Pill Tag (Highlighted)
+  // 6. Official Admission Tag (Clean context, no time countdown)
   ctx.save();
-  const validUntil = new Date(new Date(slip.createdAt || Date.now()).getTime() + 24 * 60 * 60 * 1000);
-  const validStr = `⏳ VALID FOR 24 HOURS ONLY (Expires: ${validUntil.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric'
-  })} ${validUntil.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })})`;
-
+  const validStr = 'OFFICIAL VIP PASS • CONFIRMED ADMISSION';
   ctx.font = '800 13px -apple-system, BlinkMacSystemFont, sans-serif';
   const validW = ctx.measureText(validStr).width + 30;
-  ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
-  ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+  ctx.fillStyle = 'rgba(245, 158, 11, 0.16)';
+  ctx.strokeStyle = 'rgba(245, 158, 11, 0.45)';
   ctx.lineWidth = 1.5;
   roundRect(ctx, (width - validW) / 2, 275, validW, 30, 15);
   ctx.fill();
   ctx.stroke();
 
-  ctx.fillStyle = '#fca5a5';
+  ctx.fillStyle = '#fbbf24';
   ctx.textAlign = 'center';
   ctx.fillText(validStr, width / 2, 295);
   ctx.restore();
@@ -139,7 +142,7 @@ export async function downloadTicketPassImage(slip) {
   drawDetailCard(ctx, cardX1, 390, cardW, cardH, 'GUEST / CLIENT', slip.clientName || 'Valued Guest');
   drawDetailCard(ctx, cardX2, 390, cardW, cardH, 'CONTACT', slip.clientContact || 'None provided');
   drawDetailCard(ctx, cardX1, 495, cardW, cardH, 'CAPACITY & ADMISSION', `${slip.pax || 1} Guests (Consumable)`);
-  drawDetailCard(ctx, cardX2, 495, cardW, cardH, 'SESSION / TIME', slip.timeSlot || 'Event Night');
+  drawDetailCard(ctx, cardX2, 495, cardW, cardH, 'SESSION / TIME', cleanTimeSlot);
 
   // 9. Settlement Highlight Banner
   ctx.save();
@@ -288,14 +291,18 @@ export function getPassURL(slip) {
     origin = `${window.location.protocol}//${customHost}:${window.location.port || '5173'}`;
   }
 
-  const createdTime = slip.createdAt ? new Date(slip.createdAt).getTime() : Date.now();
+  const parsedDate = slip.createdAt ? (!isNaN(slip.createdAt) ? new Date(Number(slip.createdAt)) : new Date(slip.createdAt)) : new Date();
+  const safeDate = isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+  const createdTime = safeDate.getTime();
+  const cleanTime = (slip.timeSlot || 'Event Night').replace(/Â·/g, '·').replace(/Â/g, '');
+  const cleanLoc = (slip.locationName || 'VIP Table').replace(/Â·/g, '·').replace(/Â/g, '');
 
   const params = new URLSearchParams({
     ref: slip.reservationNumber || '',
     name: slip.clientName || '',
-    loc: slip.locationName || '',
+    loc: cleanLoc,
     pax: String(slip.pax || 1),
-    time: slip.timeSlot || '',
+    time: cleanTime,
     paid: String(slip.paidAmount || 0),
     method: slip.paymentCategory || '',
     date: String(createdTime),

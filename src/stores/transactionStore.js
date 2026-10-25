@@ -87,6 +87,19 @@ const useTransactionStore = create((set, get) => ({
     await get().loadTransactions();
   },
 
+  resetAllTransactions: async () => {
+    try {
+      await db.transactions.clear();
+      await db.cashAudits.clear();
+      await get().loadTransactions();
+      await get().loadCashAudits();
+      return { success: true };
+    } catch (err) {
+      console.error('Failed to reset transactions:', err);
+      return { success: false, message: err.message };
+    }
+  },
+
   // ── Client CRUD ──
 
   loadClients: async () => {

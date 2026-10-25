@@ -775,8 +775,6 @@ export default function ReservationModal({
 /* ---------------------------------------------------------- */
 function ResTicketQR({ slip }) {
   const [qrDataURL, setQrDataURL] = useState(null);
-  const [timeLeft, setTimeLeft] = useState('');
-  const [expired, setExpired] = useState(false);
   const [copied, setCopied] = useState(false);
   const { addToast } = useToast();
 
@@ -795,24 +793,6 @@ function ResTicketQR({ slip }) {
     return () => { cancelled = true; };
   }, [passUrl]);
 
-  useEffect(() => {
-    const rawDate = slip?.createdAt;
-    const createdAt = rawDate ? (isNaN(rawDate) ? new Date(rawDate).getTime() : Number(rawDate)) : Date.now();
-    const expiresAt = createdAt + 24 * 60 * 60 * 1000;
-    function tick() {
-      const now = Date.now();
-      const diff = expiresAt - now;
-      if (diff <= 0) { setExpired(true); setTimeLeft('EXPIRED'); return; }
-      const h = Math.floor(diff / (1000 * 60 * 60));
-      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const s = Math.floor((diff % (1000 * 60)) / 1000);
-      setTimeLeft(`${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`);
-    }
-    tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
-  }, [slip]);
-
   const handleCopyLink = () => {
     navigator.clipboard.writeText(passUrl);
     setCopied(true);
@@ -820,22 +800,13 @@ function ResTicketQR({ slip }) {
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const rawDate = slip?.createdAt;
-  const createdAt = rawDate ? (isNaN(rawDate) ? new Date(rawDate).getTime() : Number(rawDate)) : Date.now();
-  const expiresDate = new Date(createdAt + 24 * 60 * 60 * 1000);
-  const expiresStr = expiresDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
-    ' ' + expiresDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-
   return (
-    <div className={`res-ticket-qr-section${expired ? ' res-ticket-qr-section--expired' : ''}`}>
-      <div className={`res-ticket-validity${expired ? ' res-ticket-validity--expired' : ''}`}>
-        <Timer size={13} />
+    <div className="res-ticket-qr-section">
+      <div className="res-ticket-validity">
+        <Sparkles size={13} />
         <span>
-          {expired
-            ? 'THIS PASS HAS EXPIRED'
-            : <><strong>Valid 24 hrs</strong>&nbsp;&nbsp;·&nbsp;&nbsp;Expires {expiresStr}</>}
+          <strong>OFFICIAL VIP PASS</strong>&nbsp;&nbsp;·&nbsp;&nbsp;Scan to open soft copy on mobile
         </span>
-        <span className="res-ticket-countdown">{timeLeft}</span>
       </div>
 
       <div className="res-ticket-qr-box">
