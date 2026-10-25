@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import db, { generateReferenceNumber } from '../db/database';
+import db, { generateReferenceNumber, resetAllFinancialData } from '../db/database';
 
 const useTransactionStore = create((set, get) => ({
   transactions: [],
@@ -89,8 +89,7 @@ const useTransactionStore = create((set, get) => ({
 
   resetAllTransactions: async () => {
     try {
-      await db.transactions.clear();
-      await db.cashAudits.clear();
+      await resetAllFinancialData();
       await get().loadTransactions();
       await get().loadCashAudits();
       return { success: true };

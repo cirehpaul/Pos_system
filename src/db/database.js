@@ -307,4 +307,18 @@ async function seedDatabase() {
   ]);
 }
 
+/**
+ * Permanently erases all money, transaction, order, and reservation records.
+ * Super Admin (owner) only.
+ */
+export async function resetAllFinancialData() {
+  await Promise.all([
+    db.transactions.clear(),
+    db.cashAudits.clear(),
+    db.orders.clear(),
+    db.reservations.clear()
+  ]);
+  return true;
+}
+
 export default db;

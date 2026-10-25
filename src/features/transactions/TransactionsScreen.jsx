@@ -395,19 +395,21 @@ export default function TransactionsScreen() {
     toast.success('Cash audit record deleted');
   };
 
+  const isSuperAdmin = currentUser?.role === 'owner' || currentUser?.role === 'admin' || currentUser?.username === 'admin';
+
   const handleResetAllTransactions = async () => {
-    if (currentUser?.role !== 'owner') {
+    if (!isSuperAdmin) {
       toast.error('Permission denied: Only Super Admin can reset transactions');
       return;
     }
     const confirmed = window.confirm(
-      '⚠️ SUPER ADMIN ACTION:\n\nAre you sure you want to RESET ALL TRANSACTIONS and CASH AUDITS?\n\nThis will permanently delete all transaction records and reset your cash balance. This action cannot be undone.\n\nClick OK to confirm reset.'
+      '⚠️ SUPER ADMIN ACTION:\n\nAre you sure you want to RESET ALL TRANSACTIONS, MONEY, AND AUDITS?\n\nThis will permanently delete all transaction records and reset your cash balance. This action cannot be undone.\n\nClick OK to confirm reset.'
     );
     if (!confirmed) return;
 
     const res = await resetAllTransactions();
     if (res.success) {
-      toast.success('All transactions and cash audits have been completely reset');
+      toast.success('All transactions, orders, and cash audits have been completely reset');
       await getCashSummary();
     } else {
       toast.error(res.message || 'Failed to reset transactions');
@@ -460,7 +462,7 @@ export default function TransactionsScreen() {
             </button>
           </div>
 
-          {currentUser?.role === 'owner' && (
+          {isSuperAdmin && (
             <button
               type="button"
               className="btn btn--danger btn--sm txn-reset-btn"

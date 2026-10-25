@@ -2,12 +2,13 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   Ticket, Users, Check, Plus, Sparkles, MapPin,
   Flame, Wine, ShieldAlert, HeartPulse, Camera, Music, DoorOpen,
-  CalendarCheck, User, Clock
+  CalendarCheck, User, Clock, RotateCcw
 } from 'lucide-react';
 import useCartStore from '../../stores/cartStore';
 import useReservationStore from '../../stores/reservationStore';
+import useAuthStore from '../../stores/authStore';
 import { useToast } from '../../components/Toast/Toast';
-import { formatCurrency } from '../../db/database';
+import { formatCurrency, resetAllFinancialData } from '../../db/database';
 import ReservationModal from './ReservationModal';
 import './EventFloorPlan.css';
 
@@ -73,8 +74,11 @@ const ROUND_TABLES_RIGHT = [
 
 export default function EventFloorPlan() {
   const toast = useToast();
+  const { currentUser } = useAuthStore();
   const { items, addItem } = useCartStore();
   const { reservations, loadReservations } = useReservationStore();
+
+  const isSuperAdmin = currentUser?.role === 'owner' || currentUser?.role === 'admin' || currentUser?.username === 'admin';
 
   // Active modal location state
   const [selectedLocation, setSelectedLocation] = useState(null);
@@ -162,12 +166,11 @@ export default function EventFloorPlan() {
     });
   };
 
-  // Quick ticket admissions
-  const handleAddAdmission = (type, qty = 1) => {
-    const isWalkIn = type === 'walkin';
-    const name = isWalkIn ? 'Walk-In Admission Ticket' : 'Early Admission Ticket';
-    const price = isWalkIn ? 550 : 380;
-    const id = isWalkIn ? 'tkt-walkin' : 'tkt-early';
+  // Quick ticket admission (Single unified ticket)
+  const handleAddAdmission = (qty = 1) => {
+    const name = 'Admission Ticket';
+    const price = 550;
+    const id = 'tkt-admission';
 
     for (let i = 0; i < qty; i++) {
       addItem({
@@ -180,6 +183,26 @@ export default function EventFloorPlan() {
       });
     }
     toast.success(`Added ${qty}x ${name} (${formatCurrency(price * qty)})`);
+  };
+
+  const handleResetAll = async () => {
+    if (!isSuperAdmin) {
+      toast.error('Permission denied: Only Super Admin can reset system data');
+      return;
+    }
+    const confirmed = window.confirm(
+      '⚠️ SUPER ADMIN RESET ACTION:\n\nAre you sure you want to RESET ALL TRANSACTIONS, MONEY, AND RESERVATIONS?\n\nThis will permanently delete all transaction records, cash audits, orders, and table bookings back to zero.\n\nClick OK to proceed.'
+    );
+    if (!confirmed) return;
+
+    try {
+      await resetAllFinancialData();
+      await loadReservations();
+      toast.success('All transactions, cash records, and reservations have been completely erased');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to reset system data');
+    }
   };
 
   return (
@@ -209,31 +232,48 @@ export default function EventFloorPlan() {
           </div>
         </div>
 
-        {/* Quick Ticket Admission Adders */}
+        {/* Quick Ticket Admission Adder (Single Unified Ticket) */}
         <div className="quick-tickets-bar">
-          <div className="quick-ticket-card quick-ticket-card--early">
-            <div className="quick-ticket-card__header">
-              <span className="quick-ticket-name">Early Admission</span>
-              <span className="quick-ticket-price">₱380</span>
-            </div>
-            <div className="quick-ticket-btns">
-              <button type="button" onClick={() => handleAddAdmission('early', 1)}>+1</button>
-              <button type="button" onClick={() => handleAddAdmission('early', 2)}>+2</button>
-              <button type="button" onClick={() => handleAddAdmission('early', 5)}>+5</button>
-            </div>
-          </div>
-
           <div className="quick-ticket-card quick-ticket-card--walkin">
             <div className="quick-ticket-card__header">
-              <span className="quick-ticket-name">Walk-In Admission</span>
+              <span className="quick-ticket-name">Admission Ticket</span>
               <span className="quick-ticket-price">₱550</span>
             </div>
             <div className="quick-ticket-btns">
-              <button type="button" onClick={() => handleAddAdmission('walkin', 1)}>+1</button>
-              <button type="button" onClick={() => handleAddAdmission('walkin', 2)}>+2</button>
-              <button type="button" onClick={() => handleAddAdmission('walkin', 5)}>+5</button>
+              <button type="button" onClick={() => handleAddAdmission(1)}>+1</button>
+              <button type="button" onClick={() => handleAddAdmission(2)}>+2</button>
+              <button type="button" onClick={() => handleAddAdmission(5)}>+5</button>
+              <button type="button" onClick={() => handleAddAdmission(10)}>+10</button>
             </div>
           </div>
+
+          {isSuperAdmin && (
+            <button
+              type="button"
+              className="floorplan-reset-btn"
+              onClick={handleResetAll}
+              title="Super Admin Only: Reset All Transactions & Reservations"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 16px',
+                borderRadius: '12px',
+                background: 'rgba(239, 68, 68, 0.16)',
+                border: '1.5px solid rgba(239, 68, 68, 0.5)',
+                color: '#f87171',
+                fontWeight: 800,
+                fontSize: '13px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                height: 'fit-content',
+                alignSelf: 'center'
+              }}
+            >
+              <RotateCcw size={15} />
+              <span>Reset All Transactions</span>
+            </button>
+          )}
         </div>
       </div>
 
