@@ -217,8 +217,8 @@ export default function SettingsScreen({ defaultTab = 'accounts' }) {
                 <div key={user.id} className={`user-card ${user.status === 'disabled' ? 'user-card--disabled' : ''}`}>
                   <div className="user-card__header">
                     <div className="user-card__avatar" style={{
-                      background: user.role === 'owner' ? 'var(--color-primary-50)' : 'var(--color-info-bg)',
-                      color: user.role === 'owner' ? 'var(--color-primary)' : 'var(--color-info-dark)'
+                      background: (user.role === 'super_admin' || user.role === 'owner') ? 'rgba(245, 158, 11, 0.18)' : (user.role === 'admin' ? 'var(--color-primary-50)' : 'var(--color-info-bg)'),
+                      color: (user.role === 'super_admin' || user.role === 'owner') ? '#f59e0b' : (user.role === 'admin' ? 'var(--color-primary)' : 'var(--color-info-dark)')
                     }}>
                       {(user.displayName || user.name).charAt(0).toUpperCase()}
                     </div>
@@ -228,7 +228,7 @@ export default function SettingsScreen({ defaultTab = 'accounts' }) {
                     </div>
                     <div className="user-card__badges">
                       <span className={`role-badge role-badge--${user.role}`}>
-                        {user.role === 'owner' ? 'Owner' : 'Cashier'}
+                        {user.role === 'super_admin' || user.role === 'owner' ? 'Super Admin' : (user.role === 'admin' ? 'Admin' : 'Cashier')}
                       </span>
                       <span className={`status-badge status-badge--${user.status === 'active' ? 'success' : 'danger'}`}>
                         {user.status === 'active' ? 'Active' : 'Disabled'}
@@ -274,7 +274,8 @@ export default function SettingsScreen({ defaultTab = 'accounts' }) {
               <Filter size={16} className="filter-select__icon" />
               <select value={sessionFilter.role} onChange={e => setSessionFilter(prev => ({ ...prev, role: e.target.value }))}>
                 <option value="all">All Roles</option>
-                <option value="owner">Owner</option>
+                <option value="super_admin">Super Admin</option>
+                <option value="admin">Admin</option>
                 <option value="cashier">Cashier</option>
               </select>
             </div>
@@ -315,7 +316,7 @@ export default function SettingsScreen({ defaultTab = 'accounts' }) {
                         <td className="font-semibold">{session.userName}</td>
                         <td>
                           <span className={`role-badge role-badge--${session.role}`}>
-                            {session.role === 'owner' ? 'Owner' : 'Cashier'}
+                            {session.role === 'super_admin' || session.role === 'owner' ? 'Super Admin' : (session.role === 'admin' ? 'Admin' : 'Cashier')}
                           </span>
                         </td>
                         <td>
@@ -472,8 +473,9 @@ export default function SettingsScreen({ defaultTab = 'accounts' }) {
             <select value={userForm.role}
               onChange={e => setUserForm(prev => ({ ...prev, role: e.target.value }))}
               disabled={editingUser?.id === currentUser?.id}>
+              <option value="super_admin">Super Admin</option>
+              <option value="admin">Admin</option>
               <option value="cashier">Cashier</option>
-              <option value="owner">Owner</option>
             </select>
           </div>
           <div className="form-group">

@@ -395,7 +395,7 @@ export default function TransactionsScreen() {
     toast.success('Cash audit record deleted');
   };
 
-  const isSuperAdmin = currentUser?.role === 'owner' || currentUser?.role === 'admin' || currentUser?.username === 'admin';
+  const isSuperAdmin = currentUser?.role === 'super_admin' || (currentUser?.role === 'super_admin' || currentUser?.role === 'owner' || currentUser?.role === 'admin') || currentUser?.username === 'admin';
 
   const handleResetAllTransactions = async () => {
     if (!isSuperAdmin) {
@@ -624,7 +624,7 @@ export default function TransactionsScreen() {
                                   <Mail size={16} />
                                 </button>
                               )}
-                              {txn.status === 'completed' && currentUser?.role === 'owner' && (
+                              {txn.status === 'completed' && (currentUser?.role === 'super_admin' || currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
                                 <button className="icon-btn icon-btn--danger" onClick={() => handleVoid(txn)} title="Void Transaction">
                                   <XCircle size={16} />
                                 </button>
@@ -921,7 +921,7 @@ export default function TransactionsScreen() {
                       <th>Discrepancy (Variance)</th>
                       <th>Audit Status</th>
                       <th>Notes</th>
-                      {currentUser?.role === 'owner' && <th className="text-center">Action</th>}
+                      {(currentUser?.role === 'super_admin' || currentUser?.role === 'owner' || currentUser?.role === 'admin') && <th className="text-center">Action</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -949,7 +949,7 @@ export default function TransactionsScreen() {
                         <td>
                           <span className="text-sm text-secondary">{audit.notes || '—'}</span>
                         </td>
-                        {currentUser?.role === 'owner' && (
+                        {(currentUser?.role === 'super_admin' || currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
                           <td>
                             <div className="table-actions justify-center">
                               <button

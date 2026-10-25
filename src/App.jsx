@@ -40,73 +40,73 @@ function App() {
         
         {/* Protected Routes */}
         <Route path="/dashboard" element={
-          <ProtectedRoute allowedRoles={['owner', 'cashier']}>
+          <ProtectedRoute allowedRoles={['super_admin', 'owner', 'admin', 'cashier']}>
             <DashboardScreen />
           </ProtectedRoute>
         } />
         
         <Route path="/pos" element={
-          <ProtectedRoute allowedRoles={['owner', 'cashier']}>
+          <ProtectedRoute allowedRoles={['super_admin', 'owner', 'admin', 'cashier']}>
             <POSScreen />
           </ProtectedRoute>
         } />
         
         <Route path="/categories" element={
-          <ProtectedRoute allowedRoles={['owner']}>
+          <ProtectedRoute allowedRoles={['super_admin', 'owner', 'admin']}>
             <CategoriesScreen />
           </ProtectedRoute>
         } />
         
         <Route path="/products" element={
-          <ProtectedRoute allowedRoles={['owner']}>
+          <ProtectedRoute allowedRoles={['super_admin', 'owner', 'admin']}>
             <ProductsScreen />
           </ProtectedRoute>
         } />
         
         <Route path="/sales" element={
-          <ProtectedRoute allowedRoles={['owner', 'cashier']}>
+          <ProtectedRoute allowedRoles={['super_admin', 'owner', 'admin', 'cashier']}>
             <SalesScreen />
           </ProtectedRoute>
         } />
         
         <Route path="/transactions" element={
-          <ProtectedRoute allowedRoles={['owner', 'cashier']}>
+          <ProtectedRoute allowedRoles={['super_admin', 'owner', 'admin', 'cashier']}>
             <TransactionsScreen />
           </ProtectedRoute>
         } />
         
         <Route path="/inventory" element={
-          <ProtectedRoute allowedRoles={['owner']}>
+          <ProtectedRoute allowedRoles={['super_admin', 'owner', 'admin']}>
             <InventoryScreen />
           </ProtectedRoute>
         } />
         
         <Route path="/reports" element={
-          <ProtectedRoute allowedRoles={['owner']}>
+          <ProtectedRoute allowedRoles={['super_admin', 'owner', 'admin']}>
             <ReportsScreen />
           </ProtectedRoute>
         } />
         
         <Route path="/users" element={
-          <ProtectedRoute allowedRoles={['owner']}>
+          <ProtectedRoute allowedRoles={['super_admin', 'owner', 'admin']}>
             <SettingsScreen defaultTab="accounts" />
           </ProtectedRoute>
         } />
         
         <Route path="/login-history" element={
-          <ProtectedRoute allowedRoles={['owner']}>
+          <ProtectedRoute allowedRoles={['super_admin', 'owner', 'admin']}>
             <SettingsScreen defaultTab="loginHistory" />
           </ProtectedRoute>
         } />
         
         <Route path="/settings" element={
-          <ProtectedRoute allowedRoles={['owner']}>
+          <ProtectedRoute allowedRoles={['super_admin', 'owner', 'admin']}>
             <SettingsScreen defaultTab="store" />
           </ProtectedRoute>
         } />
 
         <Route path="/audit-logs" element={
-          <ProtectedRoute allowedRoles={['owner']}>
+          <ProtectedRoute allowedRoles={['super_admin', 'owner', 'admin']}>
             <AuditLogsScreen />
           </ProtectedRoute>
         } />

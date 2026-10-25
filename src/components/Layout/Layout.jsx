@@ -9,16 +9,16 @@ import useAuthStore from '../../stores/authStore';
 import './Layout.css';
 
 const navItems = [
-  { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard & Accounting', roles: ['owner', 'cashier'] },
-  { path: '/pos', icon: ShoppingCart, label: 'POS / Bar Billing', roles: ['owner', 'cashier'] },
-  { path: '/transactions', icon: ArrowLeftRight, label: 'Money Transactions', roles: ['owner', 'cashier'] },
-  { path: '/sales', icon: ClipboardList, label: 'Sales History', roles: ['owner', 'cashier'] },
-  { path: '/inventory', icon: Archive, label: 'Inventory', roles: ['owner'] },
-  { path: '/reports', icon: BarChart3, label: 'Reports', roles: ['owner'] },
-  { path: '/users', icon: Users, label: 'User Management', roles: ['owner'] },
-  { path: '/login-history', icon: Clock, label: 'Login History', roles: ['owner'] },
-  { path: '/settings', icon: Settings, label: 'Settings', roles: ['owner'] },
-  { path: '/audit-logs', icon: FileText, label: 'Audit Logs', roles: ['owner'] },
+  { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard & Accounting', roles: ['super_admin', 'owner', 'admin', 'cashier'] },
+  { path: '/pos', icon: ShoppingCart, label: 'POS / Bar Billing', roles: ['super_admin', 'owner', 'admin', 'cashier'] },
+  { path: '/transactions', icon: ArrowLeftRight, label: 'Money Transactions', roles: ['super_admin', 'owner', 'admin', 'cashier'] },
+  { path: '/sales', icon: ClipboardList, label: 'Sales History', roles: ['super_admin', 'owner', 'admin', 'cashier'] },
+  { path: '/inventory', icon: Archive, label: 'Inventory', roles: ['super_admin', 'owner', 'admin'] },
+  { path: '/reports', icon: BarChart3, label: 'Reports', roles: ['super_admin', 'owner', 'admin'] },
+  { path: '/users', icon: Users, label: 'User Management', roles: ['super_admin', 'owner', 'admin'] },
+  { path: '/login-history', icon: Clock, label: 'Login History', roles: ['super_admin', 'owner', 'admin'] },
+  { path: '/settings', icon: Settings, label: 'Settings', roles: ['super_admin', 'owner', 'admin'] },
+  { path: '/audit-logs', icon: FileText, label: 'Audit Logs', roles: ['super_admin', 'owner', 'admin'] },
 ];
 
 export default function Layout({ children }) {
@@ -29,7 +29,12 @@ export default function Layout({ children }) {
   const isPOS = location.pathname === '/pos';
 
   const displayName = currentUser?.displayName || currentUser?.name || 'User';
-  const roleLabel = currentUser?.role === 'owner' ? 'Owner / Admin' : 'Cashier';
+  const getRoleTitle = (role) => {
+    if (role === 'super_admin' || role === 'owner') return 'Super Admin';
+    if (role === 'admin') return 'Admin';
+    return 'Cashier';
+  };
+  const roleLabel = getRoleTitle(currentUser?.role);
 
   const handleLogout = async () => {
     await logout();

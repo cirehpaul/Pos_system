@@ -173,9 +173,17 @@
   text-align: center;
 }
 
+.role-badge--super_admin,
 .role-badge--owner {
+  background: rgba(245, 158, 11, 0.18);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.role-badge--admin {
   background: var(--color-primary-50);
   color: var(--color-primary-700);
+  border: 1px solid rgba(99, 102, 241, 0.3);
 }
 
 .role-badge--cashier {

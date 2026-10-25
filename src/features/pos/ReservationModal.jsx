@@ -303,6 +303,12 @@ export default function ReservationModal({
                 </div>
               </div>
 
+              {/* Seating Assignment Highlight Callout */}
+              <div className="res-ticket-seat-banner">
+                <span className="seat-banner-tag"><MapPin size={12} /> SEATING ASSIGNMENT</span>
+                <span className="seat-banner-val">{location?.name || createdSlip.locationName} (Poolside)</span>
+              </div>
+
               {/* Perforation Line */}
               <div className="res-ticket-perforation"></div>
 

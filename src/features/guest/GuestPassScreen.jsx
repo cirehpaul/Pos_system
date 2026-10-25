@@ -28,6 +28,7 @@ export default function GuestPassScreen() {
     createdAt: params.get('date') || String(Date.now()),
   };
 
+  const isAdmission = cleanLoc.toLowerCase().includes('admission');
   const isValid = !!params.get('ref');
 
   // Generate QR image asynchronously
@@ -112,7 +113,7 @@ export default function GuestPassScreen() {
           <img src="/LUCID.png" alt="Lucid" className="gp-logo" />
           <div className="gp-badge">
             <ShieldCheck size={12} />
-            <span>OFFICIAL VIP EVENT PASS</span>
+            <span>{isAdmission ? 'OFFICIAL ADMISSION TICKET PASS' : 'OFFICIAL VIP EVENT PASS'}</span>
           </div>
           <h1 className="gp-location">{slip.locationName}</h1>
           <div className="gp-ref">PASS #{slip.reservationNumber}</div>
@@ -155,7 +156,7 @@ export default function GuestPassScreen() {
           </div>
           <div className="gp-detail">
             <span className="gp-detail-label">CAPACITY & ADMISSION</span>
-            <span className="gp-detail-val">{slip.pax} Guests (Consumable)</span>
+            <span className="gp-detail-val">{slip.pax} Guests {isAdmission ? '(General Admission)' : '(Consumable)'}</span>
           </div>
           <div className="gp-detail gp-detail--wide">
             <span className="gp-detail-label">SESSION / TIME</span>

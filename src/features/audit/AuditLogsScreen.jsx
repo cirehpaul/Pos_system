@@ -56,7 +56,7 @@ const ACTION_LABELS = {
 export default function AuditLogsScreen() {
   const toast = useToast();
   const { currentUser } = useAuthStore();
-  const isSuperAdmin = currentUser?.role === 'owner';
+  const isSuperAdmin = currentUser?.role === 'super_admin' || currentUser?.role === 'owner';
 
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -229,7 +229,7 @@ export default function AuditLogsScreen() {
                           {log.userName}
                           {log.userRole && (
                             <span className={`role-badge role-badge--${log.userRole}`}>
-                              {log.userRole === 'owner' ? 'Owner' : 'Cashier'}
+                              {log.userRole === 'super_admin' || log.userRole === 'owner' ? 'Super Admin' : (log.userRole === 'admin' ? 'Admin' : 'Cashier')}
                             </span>
                           )}
                         </span>

@@ -18,8 +18,10 @@ const useAuthStore = create((set, get) => ({
 
     // 2. If not found by username, check aliases
     if (!user) {
-      if (cleanUsername === 'admin' || cleanUsername === 'owner') {
-        user = allUsers.find(u => u.role === 'owner');
+      if (cleanUsername === 'superadmin' || cleanUsername === 'owner') {
+        user = allUsers.find(u => u.role === 'super_admin' || u.role === 'owner');
+      } else if (cleanUsername === 'admin') {
+        user = allUsers.find(u => u.role === 'admin') || allUsers.find(u => u.role === 'super_admin' || u.role === 'owner');
       } else if (cleanUsername === 'cashier') {
         user = allUsers.find(u => u.role === 'cashier');
       }
@@ -27,16 +29,30 @@ const useAuthStore = create((set, get) => ({
 
     // 3. If STILL no user in database, seed immediately
     if (!user) {
-      if (cleanUsername === 'admin' || cleanUsername === 'owner') {
+      if (cleanUsername === 'superadmin' || cleanUsername === 'owner') {
         const id = crypto.randomUUID();
         user = {
           id,
-          name: 'Owner',
-          displayName: 'Admin',
+          name: 'Super Admin',
+          displayName: 'Super Admin',
+          username: 'superadmin',
+          password: 'admin123',
+          pin: '1234',
+          role: 'super_admin',
+          status: 'active',
+          createdAt: new Date().toISOString()
+        };
+        await db.users.add(user);
+      } else if (cleanUsername === 'admin') {
+        const id = crypto.randomUUID();
+        user = {
+          id,
+          name: 'Admin',
+          displayName: 'Admin Staff',
           username: 'admin',
           password: 'admin123',
           pin: '1234',
-          role: 'owner',
+          role: 'admin',
           status: 'active',
           createdAt: new Date().toISOString()
         };
@@ -68,7 +84,8 @@ const useAuthStore = create((set, get) => ({
     }
 
     // Check password: check user.password, or default fallback passwords
-    const isAdmin = user.role === 'owner';
+    const isSuperAdmin = user.role === 'super_admin' || user.role === 'owner';
+    const isAdmin = isSuperAdmin || user.role === 'admin';
     const isCashier = user.role === 'cashier';
     const isValidPassword =
       user.password === cleanPassword ||

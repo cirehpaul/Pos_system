@@ -78,7 +78,7 @@ export default function EventFloorPlan() {
   const { items, addItem } = useCartStore();
   const { reservations, loadReservations } = useReservationStore();
 
-  const isSuperAdmin = currentUser?.role === 'owner' || currentUser?.role === 'admin' || currentUser?.username === 'admin';
+  const isSuperAdmin = currentUser?.role === 'super_admin' || currentUser?.role === 'owner' || currentUser?.username === 'admin';
 
   // Active modal location state
   const [selectedLocation, setSelectedLocation] = useState(null);

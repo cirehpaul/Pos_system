@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   X, Banknote, Smartphone, Building2, Check,
   ArrowRight, LayoutDashboard, RotateCcw, Clock, ShieldCheck,
-  Sparkles, Download, Printer, User, MapPin, Users, QrCode, ExternalLink, Copy
+  Sparkles, Download, Printer, User, MapPin, Users, QrCode, ExternalLink, Copy, Camera
 } from 'lucide-react';
 import { downloadWalkinTicketImage, getPassURL } from '../../utils/ticketDownloader';
 import { generateQRDataURL } from '../../utils/qrGenerator';
@@ -37,7 +37,6 @@ export default function PaymentModal({ onClose, onComplete }) {
   
   const [orderData, setOrderData] = useState(null);
   const [processing, setProcessing] = useState(false);
-  const [successView, setSuccessView] = useState('ticket');
   const [ticketQrData, setTicketQrData] = useState(null);
   const [copyDone, setCopyDone] = useState(false);
 
@@ -58,7 +57,6 @@ export default function PaymentModal({ onClose, onComplete }) {
       const admissionItems = (orderData.items || []).filter(i => (i.name || '').toLowerCase().includes('admission'));
       const hasAdmission = admissionItems.length > 0;
       if (hasAdmission) {
-        setSuccessView('ticket');
         const qty = admissionItems.reduce((sum, i) => sum + (i.quantity || 1), 0) || 1;
         const seat = orderData.assignedTable ||
           (orderData.items || []).find(i => i.assignedTable)?.assignedTable ||
@@ -78,8 +76,6 @@ export default function PaymentModal({ onClose, onComplete }) {
         generateQRDataURL(passUrl, 240, '#000000', '#ffffff')
           .then(data => setTicketQrData(data))
           .catch(err => console.error('QR generation error:', err));
-      } else {
-        setSuccessView('receipt');
       }
     }
   }, [orderData]);
@@ -508,27 +504,6 @@ export default function PaymentModal({ onClose, onComplete }) {
               <h2>Bar Bill Paid Successfully!</h2>
               <p className="payment-success-order">Receipt #{orderData.orderNumber}</p>
 
-              {/* View Toggle Tabs if order has admission tickets */}
-              {hasAdmission && (
-                <div className="payment-success-tabs">
-                  <button
-                    type="button"
-                    className={'success-tab ' + (successView === 'ticket' ? 'success-tab--active' : '')}
-                    onClick={() => { setSuccessView('ticket'); setAutoRedirectPaused(true); }}
-                  >
-                    <Sparkles size={14} />
-                    <span>Admission Ticket Pass</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={'success-tab ' + (successView === 'receipt' ? 'success-tab--active' : '')}
-                    onClick={() => setSuccessView('receipt')}
-                  >
-                    <span>Itemized Receipt</span>
-                  </button>
-                </div>
-              )}
-
               {/* Auto-redirect countdown banner */}
               <div className="auto-redirect-banner">
                 <div className="auto-redirect-info">
@@ -549,7 +524,7 @@ export default function PaymentModal({ onClose, onComplete }) {
               </div>
 
               {/* 1. Walk-in Ticket Pass View */}
-              {hasAdmission && successView === 'ticket' ? (
+              {hasAdmission ? (
                 <div className="res-success-pane animate-fade-in" style={{ width: '100%', padding: '0', maxWidth: '440px' }}>
                   <div className="res-ticket-pass" style={{ margin: '0 auto' }}>
                     <div className="res-ticket-notch res-ticket-notch--left"></div>
@@ -576,6 +551,12 @@ export default function PaymentModal({ onClose, onComplete }) {
                           })}
                         </span>
                       </div>
+                    </div>
+
+                    {/* Seating Assignment Highlight Callout */}
+                    <div className="res-ticket-seat-banner">
+                      <span className="seat-banner-tag"><MapPin size={12} /> SEATING ASSIGNMENT</span>
+                      <span className="seat-banner-val">{seatingTable}</span>
                     </div>
 
                     <div className="res-ticket-perforation"></div>
@@ -677,6 +658,28 @@ export default function PaymentModal({ onClose, onComplete }) {
                           <span>{copyDone ? 'Copied Link!' : 'Copy Link'}</span>
                         </button>
                       </div>
+                    </div>
+
+                    {/* Security Barcode & Stub Footer */}
+                    <div className="res-ticket-footer">
+                      <div className="res-ticket-barcode-wrap">
+                        <div className="res-ticket-barcode-lines">
+                          <span className="b-bar b-1"></span><span className="b-bar b-3"></span><span className="b-bar b-2"></span>
+                          <span className="b-bar b-4"></span><span className="b-bar b-1"></span><span className="b-bar b-3"></span>
+                          <span className="b-bar b-2"></span><span className="b-bar b-1"></span><span className="b-bar b-4"></span>
+                          <span className="b-bar b-2"></span><span className="b-bar b-3"></span><span className="b-bar b-1"></span>
+                          <span className="b-bar b-4"></span><span className="b-bar b-2"></span><span className="b-bar b-1"></span>
+                          <span className="b-bar b-3"></span><span className="b-bar b-4"></span><span className="b-bar b-2"></span>
+                          <span className="b-bar b-1"></span><span className="b-bar b-3"></span><span className="b-bar b-2"></span>
+                          <span className="b-bar b-4"></span><span className="b-bar b-1"></span><span className="b-bar b-2"></span>
+                        </div>
+                        <span className="res-ticket-barcode-code">#{orderData.orderNumber}</span>
+                      </div>
+                      <div className="res-ticket-notice">
+                        <Camera size={13} />
+                        <span>Present this digital pass upon venue entrance · Valid on event date</span>
+                      </div>
+                      <span className="res-ticket-watermark">GENERAL ADMISSION · NON-TRANSFERABLE</span>
                     </div>
                   </div>
 

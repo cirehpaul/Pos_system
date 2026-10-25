@@ -269,15 +269,28 @@ async function seedDatabase() {
     { id: crypto.randomUUID(), key: 'currency', value: '₱' },
   ]);
 
-  // Default admin user (owner) with username/password
+  // Default Super Admin user
   await db.users.add({
     id: crypto.randomUUID(),
-    name: 'Owner',
-    displayName: 'Admin',
+    name: 'Super Admin',
+    displayName: 'Super Admin',
+    username: 'superadmin',
+    password: 'admin123',
+    pin: '1234',
+    role: 'super_admin',
+    status: 'active',
+    createdAt: new Date().toISOString()
+  });
+
+  // Default Admin user
+  await db.users.add({
+    id: crypto.randomUUID(),
+    name: 'Admin',
+    displayName: 'Admin Staff',
     username: 'admin',
     password: 'admin123',
     pin: '1234',
-    role: 'owner',
+    role: 'admin',
     status: 'active',
     createdAt: new Date().toISOString()
   });
