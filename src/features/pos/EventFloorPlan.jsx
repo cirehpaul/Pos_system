@@ -82,6 +82,7 @@ export default function EventFloorPlan() {
 
   // Active modal location state
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const [selectedWalkinTable, setSelectedWalkinTable] = useState(null);
 
   useEffect(() => {
     loadReservations();
@@ -97,6 +98,18 @@ export default function EventFloorPlan() {
     });
     return map;
   }, [reservations]);
+
+  // Available round tables (1 to 34) for walk-in seating
+  const availableRoundTables = useMemo(() => {
+    const list = [];
+    for (let i = 1; i <= 34; i++) {
+      const locId = `round-table-${i}`;
+      if (!reservationMap[locId]) {
+        list.push(i);
+      }
+    }
+    return list;
+  }, [reservationMap]);
 
   // Map of items in cart
   const inCartMap = useMemo(() => {
@@ -147,7 +160,7 @@ export default function EventFloorPlan() {
       name: `Round Table #${tableNumber}`,
       area: 'Main Hall Poolside',
       price: 2800,
-      paxDesc: 'Consumable for 5-6 pax',
+      paxDesc: 'Consumable for 5-6 pax • Or Walk-in Seating @ ₱550/pax',
       defaultPax: 6
     });
   };
@@ -166,11 +179,12 @@ export default function EventFloorPlan() {
     });
   };
 
-  // Quick ticket admission (Single unified ticket)
+  // Quick ticket admission (Single unified ticket with optional round table seating)
   const handleAddAdmission = (qty = 1) => {
-    const name = 'Admission Ticket';
+    const tableStr = selectedWalkinTable ? ` (Round Table #${selectedWalkinTable})` : '';
+    const name = `Admission Ticket${tableStr}`;
     const price = 550;
-    const id = 'tkt-admission';
+    const id = selectedWalkinTable ? `tkt-admission-rt-${selectedWalkinTable}` : 'tkt-admission';
 
     for (let i = 0; i < qty; i++) {
       addItem({
@@ -179,7 +193,9 @@ export default function EventFloorPlan() {
         price,
         stock: 500,
         cost: 0,
-        description: `${name} event pass.`
+        assignedTable: selectedWalkinTable ? `Round Table #${selectedWalkinTable}` : 'Available Round Table (Poolside)',
+        tableNumber: selectedWalkinTable || null,
+        description: `Walk-in event pass${selectedWalkinTable ? ` • Seated at Round Table #${selectedWalkinTable}` : ' • Open Round Table Seating'}.`
       });
     }
     toast.success(`Added ${qty}x ${name} (${formatCurrency(price * qty)})`);
@@ -232,18 +248,62 @@ export default function EventFloorPlan() {
           </div>
         </div>
 
-        {/* Quick Ticket Admission Adder (Single Unified Ticket) */}
+        {/* Quick Ticket Admission Adder & Walk-in Round Table Seating */}
         <div className="quick-tickets-bar">
           <div className="quick-ticket-card quick-ticket-card--walkin">
             <div className="quick-ticket-card__header">
-              <span className="quick-ticket-name">Admission Ticket</span>
+              <div>
+                <span className="quick-ticket-name">Admission Ticket</span>
+                <span className="walkin-seat-indicator">
+                  {selectedWalkinTable ? `Seated at Round Table #${selectedWalkinTable}` : 'Open Round Table Seating'}
+                </span>
+              </div>
               <span className="quick-ticket-price">₱550</span>
             </div>
+
             <div className="quick-ticket-btns">
               <button type="button" onClick={() => handleAddAdmission(1)}>+1</button>
               <button type="button" onClick={() => handleAddAdmission(2)}>+2</button>
               <button type="button" onClick={() => handleAddAdmission(5)}>+5</button>
               <button type="button" onClick={() => handleAddAdmission(10)}>+10</button>
+            </div>
+
+            {/* Walk-in Round Tables Availability Selector */}
+            <div className="walkin-tables-availability">
+              <div className="walkin-tables-avail-header">
+                <span className="avail-title">
+                  <Sparkles size={11} /> Round Tables to Sit ({availableRoundTables.length}/34 open):
+                </span>
+                {selectedWalkinTable && (
+                  <button
+                    type="button"
+                    className="clear-table-btn"
+                    onClick={() => setSelectedWalkinTable(null)}
+                  >
+                    Reset Table
+                  </button>
+                )}
+              </div>
+              <div className="walkin-tables-chip-list">
+                <button
+                  type="button"
+                  className={`table-chip ${!selectedWalkinTable ? 'table-chip--active' : ''}`}
+                  onClick={() => setSelectedWalkinTable(null)}
+                >
+                  Free / Open
+                </button>
+                {availableRoundTables.map(num => (
+                  <button
+                    key={num}
+                    type="button"
+                    className={`table-chip ${selectedWalkinTable === num ? 'table-chip--active' : ''}`}
+                    onClick={() => setSelectedWalkinTable(num)}
+                    title={`Assign Round Table #${num} for walk-in guest`}
+                  >
+                    #{num}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

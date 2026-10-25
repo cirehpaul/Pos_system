@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import db from '../db/database';
+import { logAudit, AUDIT_ACTIONS } from '../utils/auditLogger';
 
 const useAuthStore = create((set, get) => ({
   currentUser: null,
@@ -58,6 +59,7 @@ const useAuthStore = create((set, get) => ({
     }
 
     if (!user) {
+      logAudit({ action: AUDIT_ACTIONS.LOGIN_FAILED, description: `Failed login attempt for username "${cleanUsername}"` });
       return { success: false, message: 'Invalid username or password' };
     }
 
@@ -75,6 +77,7 @@ const useAuthStore = create((set, get) => ({
       (isCashier && (cleanPassword === 'cashier123' || cleanPassword === '0000'));
 
     if (!isValidPassword) {
+      logAudit({ action: AUDIT_ACTIONS.LOGIN_FAILED, description: `Failed login attempt for "${cleanUsername}" — wrong password`, userId: user.id, userName: user.displayName || user.name, userRole: user.role });
       return { success: false, message: 'Invalid username or password' };
     }
 
@@ -106,10 +109,14 @@ const useAuthStore = create((set, get) => ({
       isAuthenticated: true,
       currentSessionId: sessionId
     });
+
+    logAudit({ action: AUDIT_ACTIONS.LOGIN, description: `${user.displayName || user.name} logged in`, userId: user.id, userName: user.displayName || user.name, userRole: user.role });
+
     return { success: true, user };
   },
 
   logout: async () => {
+    const user = get().currentUser;
     const sessionId = get().currentSessionId;
     if (sessionId) {
       try {
@@ -121,6 +128,11 @@ const useAuthStore = create((set, get) => ({
         console.error('Failed to update login session:', err);
       }
     }
+
+    if (user) {
+      logAudit({ action: AUDIT_ACTIONS.LOGOUT, description: `${user.displayName || user.name} logged out`, userId: user.id, userName: user.displayName || user.name, userRole: user.role });
+    }
+
     set({ currentUser: null, isAuthenticated: false, currentSessionId: null });
   },
 
@@ -144,6 +156,10 @@ const useAuthStore = create((set, get) => ({
       createdAt: new Date().toISOString()
     });
     await get().loadUsers();
+
+    const actor = get().currentUser;
+    logAudit({ action: AUDIT_ACTIONS.USER_CREATED, description: `Created user "${userData.displayName || userData.name}" (@${userData.username}) with role ${userData.role}`, userId: actor?.id, userName: actor?.displayName || actor?.name, userRole: actor?.role, metadata: { targetUser: userData.username, targetRole: userData.role } });
+
     return { success: true };
   },
 
@@ -154,12 +170,17 @@ const useAuthStore = create((set, get) => ({
         return { success: false, message: 'Username already in use' };
       }
     }
+    const beforeUser = await db.users.get(id);
     await db.users.update(id, userData);
     await get().loadUsers();
     if (get().currentUser?.id === id) {
       const updated = await db.users.get(id);
       set({ currentUser: updated });
     }
+
+    const actor = get().currentUser;
+    logAudit({ action: AUDIT_ACTIONS.USER_UPDATED, description: `Updated user "${beforeUser?.displayName || beforeUser?.name}" (@${beforeUser?.username})`, userId: actor?.id, userName: actor?.displayName || actor?.name, userRole: actor?.role, metadata: { targetUserId: id, changes: userData } });
+
     return { success: true };
   },
 
@@ -167,8 +188,13 @@ const useAuthStore = create((set, get) => ({
     if (get().currentUser?.id === id) {
       return { success: false, message: 'Cannot delete current user' };
     }
+    const targetUser = await db.users.get(id);
     await db.users.delete(id);
     await get().loadUsers();
+
+    const actor = get().currentUser;
+    logAudit({ action: AUDIT_ACTIONS.USER_DELETED, description: `Deleted user "${targetUser?.displayName || targetUser?.name}" (@${targetUser?.username})`, userId: actor?.id, userName: actor?.displayName || actor?.name, userRole: actor?.role, metadata: { deletedUserId: id, deletedUsername: targetUser?.username } });
+
     return { success: true };
   },
 
@@ -181,6 +207,11 @@ const useAuthStore = create((set, get) => ({
     const newStatus = user.status === 'active' ? 'disabled' : 'active';
     await db.users.update(id, { status: newStatus });
     await get().loadUsers();
+
+    const actor = get().currentUser;
+    const actionType = newStatus === 'disabled' ? AUDIT_ACTIONS.USER_DISABLED : AUDIT_ACTIONS.USER_ENABLED;
+    logAudit({ action: actionType, description: `${newStatus === 'disabled' ? 'Disabled' : 'Enabled'} user "${user.displayName || user.name}" (@${user.username})`, userId: actor?.id, userName: actor?.displayName || actor?.name, userRole: actor?.role, metadata: { targetUserId: id } });
+
     return { success: true, status: newStatus };
   },
 

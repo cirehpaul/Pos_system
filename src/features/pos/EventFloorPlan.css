@@ -115,6 +115,94 @@
   border-color: var(--color-primary);
 }
 
+.walkin-seat-indicator {
+  display: block;
+  font-size: 11px;
+  color: #38bdf8;
+  font-weight: 700;
+  margin-top: 1px;
+}
+
+.walkin-tables-availability {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.walkin-tables-avail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.avail-title {
+  font-size: 10px;
+  font-weight: 800;
+  color: #fbbf24;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.clear-table-btn {
+  background: none;
+  border: none;
+  color: #f87171;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.walkin-tables-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: 70px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.walkin-tables-chip-list::-webkit-scrollbar {
+  width: 4px;
+}
+.walkin-tables-chip-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.table-chip {
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.table-chip:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: #38bdf8;
+  color: #fff;
+}
+
+.table-chip--active {
+  background: #0284c7 !important;
+  border-color: #38bdf8 !important;
+  color: #fff !important;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+
 /* ════════════════════════════════════════════
    Venue Blueprint Map
    ════════════════════════════════════════════ */

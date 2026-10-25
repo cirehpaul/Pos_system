@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import db, { generateReferenceNumber, resetAllFinancialData } from '../db/database';
+import { logAudit, AUDIT_ACTIONS } from '../utils/auditLogger';
 
 const useTransactionStore = create((set, get) => ({
   transactions: [],
@@ -69,6 +70,9 @@ const useTransactionStore = create((set, get) => ({
 
     await db.transactions.add(transaction);
     await get().loadTransactions();
+
+    logAudit({ action: AUDIT_ACTIONS.TRANSACTION_CREATED, description: `${data.type.replace('_', ' ')} of ₱${parseFloat(data.amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })} for ${data.clientName}`, userId: data.cashierId, userName: data.cashierName, userRole: 'cashier', metadata: { referenceNumber, amount: data.amount, type: data.type, clientName: data.clientName } });
+
     return { success: true, transaction };
   },
 
@@ -79,6 +83,9 @@ const useTransactionStore = create((set, get) => ({
 
     await db.transactions.update(id, { status: 'voided', voidedAt: new Date().toISOString() });
     await get().loadTransactions();
+
+    logAudit({ action: AUDIT_ACTIONS.TRANSACTION_VOIDED, description: `Voided transaction ${txn.referenceNumber} (₱${parseFloat(txn.amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })})`, metadata: { referenceNumber: txn.referenceNumber, amount: txn.amount, type: txn.type } });
+
     return { success: true };
   },
 
@@ -92,6 +99,9 @@ const useTransactionStore = create((set, get) => ({
       await resetAllFinancialData();
       await get().loadTransactions();
       await get().loadCashAudits();
+
+      logAudit({ action: AUDIT_ACTIONS.FINANCIAL_RESET, description: 'All financial data reset — transactions, cash audits, orders, and reservations cleared', severity: 'critical' });
+
       return { success: true };
     } catch (err) {
       console.error('Failed to reset transactions:', err);

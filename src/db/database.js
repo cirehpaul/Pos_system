@@ -116,6 +116,23 @@ db.version(6).stores({
   return Promise.resolve();
 });
 
+// Version 7 - Add auditLogs table for system-wide audit trail
+db.version(7).stores({
+  users: 'id, name, username, role, status, createdAt',
+  categories: 'id, name, sortOrder, createdAt',
+  products: 'id, name, categoryId, price, cost, stock, sku, minStock, status, createdAt, updatedAt',
+  orders: 'id, orderNumber, paymentMethod, cashierId, cashierName, status, createdAt',
+  settings: 'id, key',
+  inventoryTransactions: 'id, productId, type, reference, createdAt',
+  expenses: 'id, category, date, createdAt',
+  loginSessions: 'id, userId, userName, role, loginAt, logoutAt, status',
+  transactions: 'id, referenceNumber, type, clientId, clientName, cashierId, status, createdAt',
+  clients: 'id, name, email, contact, createdAt',
+  cashAudits: 'id, cashierId, cashierName, countedAmount, expectedAmount, variance, status, createdAt',
+  reservations: 'id, reservationNumber, locationId, locationType, locationName, clientName, clientContact, status, paymentStatus, paymentCategory, cashierId, createdAt',
+  auditLogs: 'id, action, category, severity, userId, userName, userRole, createdAt'
+});
+
 // ── Financial Precision Helpers ──
 
 /**

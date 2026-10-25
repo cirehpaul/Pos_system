@@ -35,12 +35,14 @@ export default function ReservationModal({
 
   // Mode: 'view' (if already reserved) or 'create'
   const isExisting = !!existingReservation;
+  const isRoundTable = location?.type === 'round_table';
+  const [tableBookingMode, setTableBookingMode] = useState(isRoundTable ? 'walkin' : 'full'); // 'full' | 'walkin'
 
   // Form State
-  const [clientName, setClientName] = useState('');
+  const [clientName, setClientName] = useState(isRoundTable ? 'Walk-in Guest' : '');
   const [clientContact, setClientContact] = useState('');
   const [pax, setPax] = useState(location?.defaultPax || 6);
-  const [timeSlot, setTimeSlot] = useState('Event Night Â· 7:00 PM');
+  const [timeSlot, setTimeSlot] = useState('Event Night · 7:00 PM');
   const [notes, setNotes] = useState('');
 
   // Payment State
@@ -63,12 +65,20 @@ export default function ReservationModal({
   const [createdSlip, setCreatedSlip] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Effective price based on mode
+  const effectiveTablePrice = useMemo(() => {
+    if (isRoundTable && tableBookingMode === 'walkin') {
+      return (parseInt(pax) || 1) * 550;
+    }
+    return location?.price || 0;
+  }, [isRoundTable, tableBookingMode, pax, location?.price]);
+
   // Computed amounts
   const amountToPay = useMemo(() => {
     if (paymentOption === 'unpaid') return 0;
     if (paymentOption === 'deposit') return Math.max(0, parseFloat(depositAmount || 0));
-    return location?.price || 0;
-  }, [paymentOption, depositAmount, location?.price]);
+    return effectiveTablePrice;
+  }, [paymentOption, depositAmount, effectiveTablePrice]);
 
   const changeDue = useMemo(() => {
     if (paymentCategory !== 'cash') return 0;
@@ -176,20 +186,26 @@ export default function ReservationModal({
         };
       }
 
+      const isWalkin = isRoundTable && tableBookingMode === 'walkin';
+      const finalTotal = effectiveTablePrice;
+      const finalName = clientName.trim() || (isWalkin ? 'Walk-in Guest' : 'Valued Guest');
+      const finalLocName = isWalkin ? (location.name + ' (Walk-in Seating)') : location.name;
+
       const res = await createReservation({
         locationId: location.id,
         locationType: location.type,
         locationNumber: location.number,
-        locationName: location.name,
-        clientName,
+        locationName: finalLocName,
+        clientName: finalName,
         clientContact,
         clientEmail: '',
-        pax,
+        pax: parseInt(pax) || 1,
         timeSlot,
         notes,
-        totalAmount: location.price,
+        totalAmount: finalTotal,
         paidAmount: amountToPay,
-        paymentStatus: amountToPay >= location.price ? 'paid' : (amountToPay > 0 ? 'partial' : 'unpaid'),
+        paymentStatus: amountToPay >= finalTotal ? 'paid' : (amountToPay > 0 ? 'partial' : 'unpaid'),
+        isWalkin: isWalkin,
         paymentMethod: paymentMethodCode,
         paymentCategory,
         paymentDetails,
@@ -243,7 +259,10 @@ export default function ReservationModal({
             </div>
             <h2>{location?.name}</h2>
             <p className="res-subtitle">
-              {location?.paxDesc || 'Event Spot'} â€¢ Price: <strong>{formatCurrency(location?.price || 0)}</strong>
+              {isRoundTable && tableBookingMode === 'walkin'
+                ? ('Walk-in Seating (' + pax + ' Pax @ ₱550) • Total: ')
+                : ((location?.paxDesc || 'Event Spot') + ' • Price: ')}
+              <strong>{formatCurrency(effectiveTablePrice)}</strong>
             </p>
           </div>
           <button className="res-modal-close-btn" onClick={onClose}>
@@ -268,9 +287,9 @@ export default function ReservationModal({
                 </div>
                 <div className="res-ticket-badge">
                   <Sparkles size={11} />
-                  <span>OFFICIAL VIP EVENT PASS & RECEIPT</span>
+                  <span>{createdSlip.isWalkin ? 'OFFICIAL ADMISSION TICKET PASS' : 'OFFICIAL VIP EVENT PASS & RECEIPT'}</span>
                 </div>
-                <h3 className="res-ticket-title">{createdSlip.locationName}</h3>
+                <h3 className="res-ticket-title">{createdSlip.isWalkin ? ('Admission Ticket × ' + createdSlip.pax) : createdSlip.locationName}</h3>
                 <div className="res-ticket-ref-bar">
                   <span className="res-ticket-ref">PASS #{createdSlip.reservationNumber}</span>
                   <span className="res-ticket-dot">â€¢</span>
@@ -301,7 +320,7 @@ export default function ReservationModal({
                   <div className="res-ticket-card">
                     <span className="ticket-card-label"><Users size={12} /> CAPACITY & ADMISSION</span>
                     <span className="ticket-card-val">
-                      {createdSlip.pax} Guests <span className="ticket-subbadge">Consumable</span>
+                      {createdSlip.pax} Guests <span className="ticket-subbadge">{createdSlip.isWalkin ? 'Walk-in Admission' : 'Consumable'}</span>
                     </span>
                   </div>
                   <div className="res-ticket-card">
@@ -498,6 +517,46 @@ export default function ReservationModal({
           /* 3. NEW RESERVATION & BILLING FORM                         */
           /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
           <form className="res-form animate-fade-in" onSubmit={handleConfirmReservation}>
+            {isRoundTable && (
+              <div className="res-form-section">
+                <div className="res-section-title">
+                  <Sparkles size={16} />
+                  <span>Round Table Booking Mode</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <button
+                    type="button"
+                    className={'res-opt-btn ' + (tableBookingMode === 'walkin' ? 'res-opt-btn--active' : '')}
+                    onClick={() => {
+                      setTableBookingMode('walkin');
+                      if (!clientName) setClientName('Walk-in Guest');
+                    }}
+                    style={{ textAlign: 'left', padding: '12px' }}
+                  >
+                    <span className="res-opt-title" style={{ color: '#38bdf8' }}>Walk-in Seating</span>
+                    <span className="res-opt-amount">₱550 / pax</span>
+                    <span style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginTop: '2px' }}>
+                      Admission pass seated at this round table
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={'res-opt-btn ' + (tableBookingMode === 'full' ? 'res-opt-btn--active' : '')}
+                    onClick={() => {
+                      setTableBookingMode('full');
+                    }}
+                    style={{ textAlign: 'left', padding: '12px' }}
+                  >
+                    <span className="res-opt-title" style={{ color: '#fbbf24' }}>Full VIP Table</span>
+                    <span className="res-opt-amount">₱2,800 total</span>
+                    <span style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginTop: '2px' }}>
+                      Consumable for 5-6 pax reservation
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
             
             {/* 1. Client Information */}
             <div className="res-form-section">
@@ -577,7 +636,7 @@ export default function ReservationModal({
                   onClick={() => setPaymentOption('full')}
                 >
                   <span className="res-opt-title">Full Payment</span>
-                  <span className="res-opt-amount">{formatCurrency(location.price)}</span>
+                  <span className="res-opt-amount">{formatCurrency(effectiveTablePrice)}</span>
                 </button>
 
                 <button

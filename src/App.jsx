@@ -13,6 +13,7 @@ import ReportsScreen from './features/reports/ReportsScreen';
 import SettingsScreen from './features/settings/SettingsScreen';
 import TransactionsScreen from './features/transactions/TransactionsScreen';
 import GuestPassScreen from './features/guest/GuestPassScreen';
+import AuditLogsScreen from './features/audit/AuditLogsScreen';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, currentUser } = useAuthStore();
@@ -101,6 +102,12 @@ function App() {
         <Route path="/settings" element={
           <ProtectedRoute allowedRoles={['owner']}>
             <SettingsScreen defaultTab="store" />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/audit-logs" element={
+          <ProtectedRoute allowedRoles={['owner']}>
+            <AuditLogsScreen />
           </ProtectedRoute>
         } />
 

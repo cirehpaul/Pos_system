@@ -602,3 +602,42 @@
 .payment-done-btn:hover {
   background: var(--color-border);
 }
+
+/* ── Success View Toggle Tabs ── */
+.payment-success-tabs {
+  display: flex;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  margin-bottom: var(--space-3);
+  width: 100%;
+}
+
+.success-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.success-tab:hover {
+  color: #fff;
+}
+
+.success-tab--active {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #05070d !important;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}

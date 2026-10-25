@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingCart, 
   ClipboardList, BarChart3, Archive, Settings, LogOut,
-  Menu, Users, ChevronLeft, Clock, ArrowLeftRight
+  Menu, Users, ChevronLeft, Clock, ArrowLeftRight, FileText
 } from 'lucide-react';
 import useAuthStore from '../../stores/authStore';
 import './Layout.css';
@@ -18,6 +18,7 @@ const navItems = [
   { path: '/users', icon: Users, label: 'User Management', roles: ['owner'] },
   { path: '/login-history', icon: Clock, label: 'Login History', roles: ['owner'] },
   { path: '/settings', icon: Settings, label: 'Settings', roles: ['owner'] },
+  { path: '/audit-logs', icon: FileText, label: 'Audit Logs', roles: ['owner'] },
 ];
 
 export default function Layout({ children }) {
